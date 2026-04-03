@@ -1,0 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  /* HSL Color System - Premium Emerald & Deep Ocean */
+  --primary-h: 150;
+  --primary-s: 70%;
+  --primary-l: 45%;
+  --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  --primary-glow: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.3);
+  
+  --secondary-h: 215;
+  --secondary-s: 80%;
+  --secondary-l: 50%;
+  --secondary: hsl(var(--secondary-h), var(--secondary-s), var(--secondary-l));
+  
+  --dark-h: 230;
+  --dark: hsl(var(--dark-h), 20%, 12%);
+  --dark-soft: hsl(var(--dark-h), 15%, 18%);
+  
+  --white: #ffffff;
+  --light: #f8fafc;
+  --gray: #64748b;
+  --error: #ef4444;
+  --success: #22c55e;
+  
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-blur: blur(12px);
+  
+  /* Shadows & Layout */
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
+  --shadow-lg: 0 20px 50px -12px rgba(0,0,0,0.15);
+  --radius-sm: 8px;
+  --radius: 16px;
+  --radius-lg: 24px;
+  
+  /* Animations */
+  --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+  background-color: var(--light);
+  color: var(--dark);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--light); }
+::-webkit-scrollbar-thumb { 
+  background: #cbd5e1; 
+  border-radius: 10px;
+  border: 2px solid var(--light);
+}
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Global Utilities */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.flex { display: flex; align-items: center; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.grid { display: grid; gap: 2rem; }
+
+a { text-decoration: none; color: inherit; transition: var(--transition); }
+ul { list-style: none; }
+
+button {
+  cursor: pointer;
+  border: none;
+  outline: none;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* Premium Buttons */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), #10b981);
+  color: white;
+  padding: 0.9rem 2rem;
+  border-radius: var(--radius);
+  box-shadow: 0 10px 20px -5px var(--primary-glow);
+  transition: var(--transition);
+}
+
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 30px -5px var(--primary-glow);
+}
+
+.btn-primary:active { transform: translateY(-1px); }
+
+/* Glass Cards */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-md);
+}
+
+.premium-card {
+  background: var(--white);
+  padding: 2rem;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid rgba(0,0,0,0.03);
+  transition: var(--transition);
+}
+
+.premium-card:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Typography Gradient */
+.text-gradient {
+  background: linear-gradient(135deg, var(--dark) 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Layout Parts */
+.section-padding { padding: 6rem 0; }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade {
+  animation: fadeIn 0.8s var(--transition) forwards;
+}
+
+/* Custom Input */
+input, select {
+  width: 100%;
+  padding: 1rem 1.2rem;
+  border-radius: var(--radius);
+  border: 2px solid transparent;
+  background: #f1f5f9;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+input:focus, select:focus {
+  background: var(--white);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-glow);
+}
