@@ -95,7 +95,7 @@ exports.refreshAccessToken = async (req, res) => {
       .cookie("refreshToken", newRefreshToken, options)
       .json({
         message: "Access token refreshed",
-        accessToken,
+        token: accessToken,
         refreshToken: newRefreshToken
       });
 
@@ -202,7 +202,7 @@ exports.loginUser = async (req, res) => {
       .cookie("refreshToken", refreshToken, options)
       .json({
         message: "Login Successful",
-        accessToken,
+        token: accessToken,
         refreshToken // optional: many devs return it once, but roadmap says access in client, refresh in cookie
       });
   }
