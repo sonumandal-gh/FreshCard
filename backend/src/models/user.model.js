@@ -22,6 +22,13 @@ const userSchema = new mongoose.Schema(
       type: String, 
       enum: ["user", "admin", "seller"],
       default: "user"
+    },
+    refreshToken: {
+      type: String
+    },
+    lastActivity: {
+      type: Date,
+      default: Date.now
     }
   },
   { timestamps: true }

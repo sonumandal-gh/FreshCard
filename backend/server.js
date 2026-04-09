@@ -1,11 +1,13 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 
 const app = express();
 
 // middleware
 app.use(express.json());
+app.use(cookieParser());
 
 // routes import
 const userRoutes = require("./src/routes/user.routes");

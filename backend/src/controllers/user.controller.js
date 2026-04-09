@@ -49,21 +49,132 @@ exports.registerUser = async (req , res) => {
   }
 };
 
+// REFRESH ACCESS TOKEN
+exports.refreshAccessToken = async (req, res) => {
+  const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incomingRefreshToken) {
+    return res.status(401).json({ message: "Unauthorized request" });
+  }
+
+  try {
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET || "refresh_secret"
+    );
+
+    const user = await User.findById(decodedToken?.id);
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    if (incomingRefreshToken !== user?.refreshToken) {
+      return res.status(401).json({ message: "Refresh token is expired or used" });
+    }
+
+    // Check inactivity (Step 5)
+    const tenMinutes = 10 * 60 * 1000;
+    if (Date.now() - user.lastActivity > tenMinutes) {
+      // Clear token from DB on inactivity
+      user.refreshToken = undefined;
+      await user.save({ validateBeforeSave: false });
+      return res.status(401).json({ message: "Session expired due to inactivity" });
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict"
+    };
+
+    const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshTokens(user._id);
+
+    return res
+      .status(200)
+      .cookie("refreshToken", newRefreshToken, options)
+      .json({
+        message: "Access token refreshed",
+        accessToken,
+        refreshToken: newRefreshToken
+      });
+
+  } catch (error) {
+    return res.status(401).json({ message: error?.message || "Invalid refresh token" });
+  }
+};
+
+// LOGOUT
+exports.logoutUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        $unset: {
+          refreshToken: 1 // remove refresh token from DB
+        }
+      },
+      {
+        new: true
+      }
+    );
+
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict"
+    };
+
+    return res
+      .status(200)
+      .clearCookie("refreshToken", options)
+      .json({ message: "User logged out" });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+// Helper function to generate tokens
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+    const refreshToken = jwt.sign(
+      { id: user._id },
+      process.env.REFRESH_TOKEN_SECRET || "refresh_secret",
+      { expiresIn: "7d" }
+    );
+
+    user.refreshToken = refreshToken;
+    user.lastActivity = Date.now();
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new Error("Error generating tokens");
+  }
+};
+
 // LOGIN
 exports.loginUser = async (req, res) => {
-  try{
-    const {email , password} = req.body;
+  try {
+    const { email, password } = req.body;
 
     // validation
-    if(!email || !password){
+    if (!email || !password) {
       return res.status(400).json({
-        message: "Email and password require"
+        message: "Email and password required"
       });
     }
 
     // find user
-    const user = await User.findOne({email});
-    if(!user){
+    const user = await User.findOne({ email });
+    if (!user) {
       return res.status(400).json({
         message: "User not found"
       });
@@ -71,26 +182,32 @@ exports.loginUser = async (req, res) => {
 
     // compare password 
     const isMatch = await bcrypt.compare(password, user.password);
-    if(!isMatch){
+    if (!isMatch) {
       return res.status(400).json({
         message: "Invalid credentials"
       });
     }
 
-    // generate token
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+    // generate tokens
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
 
-    res.status(200).json({
-      message: "Login Successful",
-      token
-    });
+    // set cookie options
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict"
+    };
+
+    res.status(200)
+      .cookie("refreshToken", refreshToken, options)
+      .json({
+        message: "Login Successful",
+        accessToken,
+        refreshToken // optional: many devs return it once, but roadmap says access in client, refresh in cookie
+      });
   }
-  
-  catch(error){
+
+  catch (error) {
     res.status(500).json({
       message: "Server error",
       error: error.message
