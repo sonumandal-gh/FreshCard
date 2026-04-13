@@ -50,6 +50,28 @@ exports.createOrder = async (req, res) => {
   }
 };
 
+// GET USER ORDERS (My Orders)
+exports.getMyOrders = async (req, res) => {
+  try {
+    const orders = await Order.find({ userId: req.user.id })
+      .populate("products.productId", "name price image")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      message: "User orders fetched",
+      count: orders.length,
+      data: orders
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "server error",
+      error: error.message
+    });
+  }
+};
+
 // GET ALL ORDERS (with populate)
 exports.getOrders = async (req ,res) => {
   try {
@@ -61,8 +83,6 @@ exports.getOrders = async (req ,res) => {
       success: true,
       message: "Orders fetched",
       count: orders.length,
-      page,
-      limit,
       data: orders
     });
   }
