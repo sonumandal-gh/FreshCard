@@ -1,7 +1,10 @@
 const express = require("express");
+const passport = require("passport");
 const Router = express.Router();
 
-const { registerUser, loginUser, logoutUser, refreshAccessToken } = require("../controllers/user.controller");
+Router.get("/test", (req, res) => res.send("User Router is working!"));
+
+const { registerUser, loginUser, logoutUser, refreshAccessToken, googleAuthCallback } = require("../controllers/user.controller");
 const authMiddleware = require("../middlewares/auth.middleware");
 
 // protected route
@@ -16,5 +19,14 @@ Router.post("/register", registerUser);
 Router.post("/login", loginUser);
 Router.post("/logout", authMiddleware, logoutUser);
 Router.post("/refresh-token", refreshAccessToken);
+
+// Google OAuth routes
+Router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+Router.get(
+  "/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login", session: false }),
+  googleAuthCallback
+);
 
 module.exports = Router;

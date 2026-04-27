@@ -5,18 +5,18 @@ const User = require("../models/user.model");
 // REGISTER
 exports.registerUser = async (req , res) => {
   try {
-    const {name, email ,password} = req.body;
+    const { name, email, password, role } = req.body;
 
     // basic validation
-    if(!name || !email || !password){
+    if (!name || !email || !password) {
       return res.status(400).json({
         message: "All fields are required"
       });
     }
 
     // user already exist check
-    const existingUser = await User.findOne({email});
-    if(existingUser){
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
       return res.status(400).json({
         message: "User already exists"
       });
@@ -29,7 +29,8 @@ exports.registerUser = async (req , res) => {
     const user = await User.create({
       name,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      role: role || "user"
     });
 
     res.status(201).json({
@@ -132,6 +133,32 @@ exports.logoutUser = async (req, res) => {
       .json({ message: "User logged out" });
   } catch (error) {
     return res.status(500).json({ message: error.message });
+  }
+};
+
+// GOOGLE AUTH CALLBACK
+exports.googleAuthCallback = async (req, res) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Authentication failed" });
+    }
+
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
+
+    const options = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict"
+    };
+
+    // Redirect to frontend with tokens
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    res.status(200)
+      .cookie("refreshToken", refreshToken, options)
+      .redirect(`${frontendUrl}/auth-success?token=${accessToken}`);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 

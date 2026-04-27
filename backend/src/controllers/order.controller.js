@@ -15,14 +15,21 @@ exports.createOrder = async (req, res) => {
 
     let totalPrice = 0;
 
-    // calculate total
+    // calculate total and check stock
     for (let item of products) {
       const product = await Product.findById(item.productId);
 
       if (!product) {
         return res.status(404).json({
           success: false,
-          message: "Product not found"
+          message: `Product with ID ${item.productId} not found`
+        });
+      }
+
+      if (product.stock < item.quantity) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient stock for product: ${product.name}. Available: ${product.stock}`
         });
       }
 
@@ -30,14 +37,21 @@ exports.createOrder = async (req, res) => {
     }
 
     const order = await Order.create({
-      userId: req.user.id,         
-      products,              
-      totalPrice             
+      userId: req.user.id,
+      products,
+      totalPrice
     });
+
+    // Update stock after successful order creation
+    for (let item of products) {
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: { stock: -Number(item.quantity) }
+      });
+    }
 
     res.status(201).json({
       success: true,
-      message: "Order created",
+      message: "Order created and stock updated successfully",
       order
     });
 
@@ -73,11 +87,11 @@ exports.getMyOrders = async (req, res) => {
 };
 
 // GET ALL ORDERS (with populate)
-exports.getOrders = async (req ,res) => {
+exports.getOrders = async (req, res) => {
   try {
     const orders = await Order.find()
-    .populate("userId","name email") // user ka data
-    .populate("products.productId", "name price");
+      .populate("userId", "name email") // user ka data
+      .populate("products.productId", "name price");
 
     res.status(200).json({
       success: true,
@@ -86,7 +100,7 @@ exports.getOrders = async (req ,res) => {
       data: orders
     });
   }
-  catch(error){
+  catch (error) {
     res.status(500).json({
       success: false,
       message: "server error",
@@ -99,12 +113,12 @@ exports.getOrders = async (req ,res) => {
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const {status} = req.body;
+    const { status } = req.body;
 
     // valid status check
     const validStatus = ["pending", "completed", "cancelled"];
 
-    if(!validStatus.includes(status)){
+    if (!validStatus.includes(status)) {
       return res.status(400).json({
         success: false,
         message: "Invalid status value"
@@ -114,7 +128,7 @@ exports.updateOrderStatus = async (req, res) => {
     // /find order
     const order = await Order.findById(id);
 
-    if(!order){
+    if (!order) {
       return res.status(404).json({
         success: false,
         message: "Order not found"

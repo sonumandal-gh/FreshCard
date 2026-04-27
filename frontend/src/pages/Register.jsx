@@ -179,6 +179,37 @@ const Register = () => {
           </motion.button>
         </form>
 
+        <div style={{ margin: '2rem 0', display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--gray)', fontSize: '0.9rem', fontWeight: '600' }}>
+          <div style={{ flex: 1, height: '1px', background: '#f1f5f9' }}></div>
+          OR
+          <div style={{ flex: 1, height: '1px', background: '#f1f5f9' }}></div>
+        </div>
+
+        <motion.button 
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => window.location.href = 'http://localhost:5000/api/users/google'}
+          style={{ 
+            width: '100%', 
+            padding: '1.1rem', 
+            background: 'white',
+            color: 'var(--dark)',
+            border: '2px solid #f1f5f9',
+            borderRadius: '16px',
+            fontSize: '1rem', 
+            fontWeight: '700',
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            gap: '12px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: '20px' }} />
+          Sign up with Google
+        </motion.button>
+
         <div style={{ textAlign: 'center', marginTop: '3rem' }}>
           <p style={{ color: 'var(--gray)', fontWeight: '600' }}>
             Already a member? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: '950' }}>Sign in here</Link>

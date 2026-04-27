@@ -10,6 +10,7 @@ import Admin from './pages/Admin';
 import AdminOrdersPage from './pages/AdminOrdersPage';
 import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
+import AuthSuccess from './pages/AuthSuccess';
 import CartDrawer from './components/CartDrawer';
 
 const App = () => {
@@ -24,6 +25,7 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
+                <Route path="/auth-success" element={<AuthSuccess />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/orders" element={<AdminOrdersPage />} />
