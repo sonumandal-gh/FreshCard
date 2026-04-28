@@ -9,7 +9,6 @@ const adminMiddleware = require("../middlewares/admin.middleware");
 router.post("/", authMiddleware, createOrder);
 router.get("/", authMiddleware ,getOrders);
 router.get("/my-orders", authMiddleware, getMyOrders);
-router.put("/:id/status", authMiddleware, updateOrderStatus);
 router.put("/:id/status", authMiddleware, adminMiddleware, updateOrderStatus)
 
 module.exports = router;

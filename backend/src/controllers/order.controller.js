@@ -135,6 +135,15 @@ exports.updateOrderStatus = async (req, res) => {
       });
     }
 
+    // restock if cancelled
+    if (status === "cancelled" && order.status !== "cancelled") {
+      for (let item of order.products) {
+        await Product.findByIdAndUpdate(item.productId, {
+          $inc: { stock: Number(item.quantity) }
+        });
+      }
+    }
+
     // update status
     order.status = status;
 

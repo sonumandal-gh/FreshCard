@@ -188,7 +188,7 @@ const Register = () => {
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => window.location.href = 'http://localhost:5000/api/users/google'}
+          onClick={() => window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users/google`}
           style={{ 
             width: '100%', 
             padding: '1.1rem', 
