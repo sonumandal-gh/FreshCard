@@ -74,14 +74,7 @@ exports.refreshAccessToken = async (req, res) => {
       return res.status(401).json({ message: "Refresh token is expired or used" });
     }
 
-    // Check inactivity (Step 5)
-    const tenMinutes = 10 * 60 * 1000;
-    if (Date.now() - user.lastActivity > tenMinutes) {
-      // Clear token from DB on inactivity
-      user.refreshToken = undefined;
-      await user.save({ validateBeforeSave: false });
-      return res.status(401).json({ message: "Session expired due to inactivity" });
-    }
+    // Inactivity check removed to allow full 7-day session
 
     const options = {
       httpOnly: true,
