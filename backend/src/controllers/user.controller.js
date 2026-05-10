@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/user.model");
 
 // REGISTER
-exports.registerUser = async (req , res) => {
+exports.registerUser = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
@@ -42,7 +42,7 @@ exports.registerUser = async (req , res) => {
       }
     });
   }
-  catch(error){
+  catch (error) {
     res.status(500).json({
       message: "server error",
       error: error.message

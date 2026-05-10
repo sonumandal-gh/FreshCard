@@ -55,7 +55,7 @@ app.get("/api/health", (req, res) => {
 // routes connect
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
-app.use("/api/orders" , orderRoutes);
+app.use("/api/orders", orderRoutes);
 app.use("/api/payment", paymentRoutes);
 
 // server start
