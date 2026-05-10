@@ -11,7 +11,12 @@ const app = express();
 
 // middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: [
+    process.env.FRONTEND_URL,
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://grocery.sonumandal.in"
+  ].filter(Boolean),
   credentials: true
 }));
 app.use(express.json());
@@ -21,7 +26,12 @@ app.use(cookieParser());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'mysecret',
   resave: false,
-  saveUninitialized: true,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+  }
 }));
 
 app.use(passport.initialize());
