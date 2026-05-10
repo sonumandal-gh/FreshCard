@@ -129,7 +129,7 @@ const CartPage = () => {
 
   return (
     <div className="container" style={{ paddingTop: '7rem', paddingBottom: '4rem' }}>
-      <div className="flex-between" style={{ marginBottom: '3rem' }}>
+      <div className="flex-between mobile-stack" style={{ marginBottom: '3rem' }}>
         <div>
           <h2 className="heading-xl" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Shopping Cart</h2>
           <p style={{ color: '#888' }}>You have {cart.length} items in your cart</p>
@@ -137,11 +137,11 @@ const CartPage = () => {
         <button onClick={clearCart} style={{ color: '#e74c3c', fontWeight: '700', background: 'none' }}>Empty Cart</button>
       </div>
 
-      <div className="grid" style={{ gridTemplateColumns: '2fr 1fr', alignItems: 'start', gap: '3rem' }}>
+      <div className="grid responsive-grid" style={{ gridTemplateColumns: '2fr 1fr', alignItems: 'start', gap: '3rem' }}>
         {/* Cart Items */}
         <div className="grid" style={{ gap: '1.5rem' }}>
           {cart.map(item => (
-            <div key={item._id} className="card flex-between" style={{ padding: '1.2rem' }}>
+            <div key={item._id} className="card flex-between mobile-stack" style={{ padding: '1.2rem', alignItems: 'center' }}>
               <div className="flex" style={{ gap: '1.5rem' }}>
                 <div style={{ background: '#f8f8f8', width: '60px', height: '60px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                   {item.image ? (
@@ -156,7 +156,7 @@ const CartPage = () => {
                 </div>
               </div>
 
-              <div className="flex" style={{ gap: '3rem' }}>
+              <div className="flex mobile-stack" style={{ gap: '2rem', width: '100%', justifyContent: 'space-between' }}>
                 <div className="flex" style={{ background: '#f8f8f8', borderRadius: '30px', padding: '4px' }}>
                   <button onClick={() => updateQuantity(item._id, item.quantity - 1)} style={{ background: 'white', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow)' }}>
                     <Minus size={14} />

@@ -29,20 +29,12 @@ const Register = () => {
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      padding: '4rem 2rem'
-    }}>
+    <div className="auth-page">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="premium-card" 
-        style={{ maxWidth: '520px', width: '100%', padding: '3.5rem' }}
+        className="auth-card"
       >
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <motion.div 
@@ -188,7 +180,11 @@ const Register = () => {
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users/google`}
+          onClick={() => {
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const authPath = baseUrl.endsWith('/api') ? '/users/google' : '/api/users/google';
+            window.location.href = `${baseUrl}${authPath}`;
+          }}
           style={{ 
             width: '100%', 
             padding: '1.1rem', 

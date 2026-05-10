@@ -58,7 +58,7 @@ const Home = () => {
         position: 'relative',
         background: 'transparent', 
         color: 'white', 
-        padding: '5rem 0 7rem', 
+        padding: 'clamp(4rem, 10vw, 7rem) 0 clamp(4rem, 10vw, 7rem)', 
         overflow: 'hidden',
         marginBottom: '1rem'
       }}>
@@ -108,7 +108,7 @@ const Home = () => {
               Premium ingredients from local farmers delivered to your doorstep in 15 minutes.
             </p>
             
-            <div className="flex" style={{ gap: '1rem', justifyContent: 'center' }}>
+            <div className="flex hero-buttons" style={{ gap: '1rem', justifyContent: 'center' }}>
               <motion.button 
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -126,7 +126,7 @@ const Home = () => {
         </div>
 
         {/* Compact Stats */}
-        <div className="container" style={{ position: 'absolute', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)', width: '100%', zIndex: 1 }}>
+        <div className="container hero-stats" style={{ position: 'absolute', bottom: '1.5rem', left: '50%', transform: 'translateX(-50%)', width: '100%', zIndex: 1 }}>
           <div className="flex" style={{ justifyContent: 'center', gap: '2rem', color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
              <div className="flex" style={{ gap: '6px' }}><TrendingUp size={14} color="var(--primary)" /> Fast Delivery</div>
              <div className="flex" style={{ gap: '6px' }}><ShieldCheck size={14} color="var(--primary)" /> 100% Organic</div>
@@ -138,7 +138,9 @@ const Home = () => {
       {/* Main Content */}
       <section id="products-grid" className="container" style={{ position: 'relative', marginTop: '-4rem', zIndex: 10 }}>
         {/* Category Navigation */}
-        <div style={{ 
+        <div 
+          className="scroll-x category-bar"
+          style={{ 
           background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.02) 100%)', 
           backdropFilter: 'blur(20px)',
           padding: '1.2rem', 
@@ -148,7 +150,6 @@ const Home = () => {
           marginBottom: '4rem',
           display: 'flex',
           justifyContent: 'center',
-          flexWrap: 'wrap',
           gap: '1rem'
         }}>
           {categories.map(cat => (

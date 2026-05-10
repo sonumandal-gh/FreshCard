@@ -50,7 +50,7 @@ const AdminOrdersPage = () => {
 
   return (
     <div className="container" style={{ padding: '6rem 0', minHeight: '100vh' }}>
-      <div className="flex-between" style={{ marginBottom: '3rem' }}>
+      <div className="flex-between mobile-stack" style={{ marginBottom: '3rem' }}>
         <div>
           <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: 'var(--dark)' }}>Manage Orders</h1>
           <p style={{ color: 'var(--gray)', fontSize: '1.1rem' }}>Global view of all customer orders</p>

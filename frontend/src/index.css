@@ -7,35 +7,35 @@
   --primary-l: 45%;
   --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
   --primary-glow: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.3);
-  
+
   --secondary-h: 215;
   --secondary-s: 80%;
   --secondary-l: 50%;
   --secondary: hsl(var(--secondary-h), var(--secondary-s), var(--secondary-l));
-  
+
   --dark-h: 230;
   --dark: hsl(var(--dark-h), 20%, 12%);
   --dark-soft: hsl(var(--dark-h), 15%, 18%);
-  
+
   --white: #ffffff;
   --light: #f8fafc;
   --gray: #64748b;
   --error: #ef4444;
   --success: #22c55e;
-  
+
   /* Glassmorphism */
   --glass-bg: rgba(255, 255, 255, 0.7);
   --glass-border: rgba(255, 255, 255, 0.4);
   --glass-blur: blur(12px);
-  
+
   /* Shadows & Layout */
-  --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
-  --shadow-md: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1);
-  --shadow-lg: 0 20px 50px -12px rgba(0,0,0,0.15);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 20px 50px -12px rgba(0, 0, 0, 0.15);
   --radius-sm: 8px;
   --radius: 16px;
   --radius-lg: 24px;
-  
+
   /* Animations */
   --transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -56,14 +56,58 @@ body {
 }
 
 /* Custom Scrollbar */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--light); }
-::-webkit-scrollbar-thumb { 
-  background: #cbd5e1; 
+.scroll-x::-webkit-scrollbar {
+  display: none;
+}
+
+/* Auth Pages */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 2rem;
+}
+
+.auth-card {
+  max-width: 520px;
+  width: 100%;
+  padding: 3.5rem;
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+@media (max-width: 768px) {
+  .auth-page {
+    padding: 1rem;
+    align-items: flex-start;
+  }
+  .auth-card {
+    padding: 2rem 1.5rem;
+    border-radius: var(--radius);
+    margin-top: 2rem;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--light);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
   border-radius: 10px;
   border: 2px solid var(--light);
 }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
 
 /* Global Utilities */
 .container {
@@ -72,12 +116,31 @@ body {
   padding: 0 2rem;
 }
 
-.flex { display: flex; align-items: center; }
-.flex-between { display: flex; justify-content: space-between; align-items: center; }
-.grid { display: grid; gap: 2rem; }
+.flex {
+  display: flex;
+  align-items: center;
+}
 
-a { text-decoration: none; color: inherit; transition: var(--transition); }
-ul { list-style: none; }
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.grid {
+  display: grid;
+  gap: 2rem;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: var(--transition);
+}
+
+ul {
+  list-style: none;
+}
 
 button {
   cursor: pointer;
@@ -102,7 +165,9 @@ button {
   box-shadow: 0 15px 30px -5px var(--primary-glow);
 }
 
-.btn-primary:active { transform: translateY(-1px); }
+.btn-primary:active {
+  transform: translateY(-1px);
+}
 
 /* Glass Cards */
 .glass-card {
@@ -118,7 +183,7 @@ button {
   padding: 2rem;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  border: 1px solid rgba(0,0,0,0.03);
+  border: 1px solid rgba(0, 0, 0, 0.03);
   transition: var(--transition);
 }
 
@@ -136,12 +201,21 @@ button {
 }
 
 /* Layout Parts */
-.section-padding { padding: 6rem 0; }
+.section-padding {
+  padding: 6rem 0;
+}
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade {
@@ -149,7 +223,8 @@ button {
 }
 
 /* Custom Input */
-input, select {
+input,
+select {
   width: 100%;
   padding: 1rem 1.2rem;
   border-radius: var(--radius);
@@ -160,8 +235,100 @@ input, select {
   transition: var(--transition);
 }
 
-input:focus, select:focus {
+input:focus,
+select:focus {
   background: var(--white);
   border-color: var(--primary);
   box-shadow: 0 0 0 4px var(--primary-glow);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1.5rem;
+  }
+
+  .section-padding {
+    padding: 4rem 0;
+  }
+
+  .grid {
+    gap: 1.5rem;
+  }
+
+  h1 {
+    font-size: 2.2rem !important;
+  }
+
+  .navbar-desktop {
+    display: none !important;
+  }
+
+  .mobile-toggle {
+    display: block !important;
+  }
+
+  /* Fix for overlapping elements on small screens */
+  .hero {
+    padding: 6rem 0 4rem !important;
+  }
+
+  .mobile-hide {
+    display: none !important;
+  }
+
+  .mobile-stack {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 1rem !important;
+  }
+
+  .responsive-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Category Scroll fix */
+  .category-bar {
+    justify-content: flex-start !important;
+    padding: 1rem !important;
+    border-radius: 1rem !important;
+    margin-bottom: 2rem !important;
+  }
+
+  .hero-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hero-buttons button {
+    width: 100%;
+  }
+
+  .hero-stats {
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
+    transform: none !important;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem !important;
+  }
+
+  .category-bar button {
+    padding: 0.6rem 1.2rem !important;
+    font-size: 0.85rem !important;
+  }
+}
+
+.scroll-x {
+  overflow-x: auto !important;
+  white-space: nowrap !important;
+  display: flex !important;
+  gap: 0.8rem !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.scroll-x::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
 }

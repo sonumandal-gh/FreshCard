@@ -105,7 +105,7 @@ const Admin = () => {
 
   return (
     <div className="container" style={{ paddingTop: '7rem' }}>
-      <div className="flex-between" style={{ marginBottom: '2rem' }}>
+      <div className="flex-between mobile-stack" style={{ marginBottom: '2rem' }}>
         <div>
           <h2 className="heading-xl" style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Admin Dashboard</h2>
           <p style={{ color: '#888' }}>Manage your product inventory efficiently</p>
@@ -118,7 +118,7 @@ const Admin = () => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '5rem' }}>Loading Inventory...</div>
       ) : (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead style={{ background: '#f8f8f8', borderBottom: '1px solid #eee' }}>
               <tr>

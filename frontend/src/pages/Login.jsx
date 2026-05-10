@@ -27,20 +27,12 @@ const Login = () => {
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      padding: '2rem'
-    }}>
+    <div className="auth-page">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-        className="premium-card" 
-        style={{ maxWidth: '480px', width: '100%', padding: '3rem' }}
+        className="auth-card"
       >
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <motion.div 
@@ -150,7 +142,11 @@ const Login = () => {
         <motion.button 
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/users/google`}
+          onClick={() => {
+            const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const authPath = baseUrl.endsWith('/api') ? '/users/google' : '/api/users/google';
+            window.location.href = `${baseUrl}${authPath}`;
+          }}
           style={{ 
             width: '100%', 
             padding: '1.1rem', 
