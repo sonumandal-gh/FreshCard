@@ -30,7 +30,7 @@ exports.registerUser = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      role: role || "user"
+      role: "user" // Hardcoded to 'user' for security
     });
 
     res.status(201).json({
@@ -44,7 +44,65 @@ exports.registerUser = async (req, res) => {
   }
   catch (error) {
     res.status(500).json({
-      message: "server error",
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+
+// ADMIN: GET ALL USERS
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password -refreshToken");
+    res.status(200).json({
+      success: true,
+      data: users
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
+    });
+  }
+};
+
+// ADMIN: UPDATE USER ROLE
+exports.updateUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    const validRoles = ["user", "admin", "seller"];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role"
+      });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      id,
+      { role },
+      { new: true }
+    ).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `User role updated to ${role}`,
+      data: user
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
       error: error.message
     });
   }

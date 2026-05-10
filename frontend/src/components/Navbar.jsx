@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Search, Menu, Package, LayoutDashboard, Home as HomeIcon, ClipboardList } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Search, Menu, Package, LayoutDashboard, Home as HomeIcon, ClipboardList, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -98,6 +98,9 @@ const Navbar = () => {
               </Link>
               <Link to="/admin/orders" style={{ fontWeight: '700', fontSize: '0.95rem', color: scrolled ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)'), display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ClipboardList size={18} /> Manage
+              </Link>
+              <Link to="/admin/users" style={{ fontWeight: '700', fontSize: '0.95rem', color: scrolled ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)'), display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={18} /> Users
               </Link>
             </>
           )}
@@ -210,6 +213,7 @@ const Navbar = () => {
                   <>
                     <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--dark)', width: '100%' }}>Inventory</Link>
                     <Link to="/admin/orders" onClick={() => setIsMobileMenuOpen(false)} style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--dark)', width: '100%' }}>Manage Orders</Link>
+                    <Link to="/admin/users" onClick={() => setIsMobileMenuOpen(false)} style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--dark)', width: '100%' }}>Manage Users</Link>
                   </>
                 )}
                 <hr style={{ width: '100%', border: 'none', borderTop: '1px solid #eee' }} />

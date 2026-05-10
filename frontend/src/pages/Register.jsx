@@ -124,28 +124,7 @@ const Register = () => {
             </div>
           </div>
 
-          <div className="animate-fade" style={{ animationDelay: '0.35s' }}>
-            <label style={{ display: 'block', fontWeight: '800', marginBottom: '10px', fontSize: '0.95rem' }}>I am a</label>
-            <div style={{ position: 'relative' }}>
-              <Shield size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--gray)', zIndex: 1 }} />
-              <select 
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                style={{ 
-                  paddingLeft: '48px', 
-                  fontSize: '1rem',
-                  appearance: 'none',
-                  cursor: 'pointer',
-                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 16px center'
-                }}
-              >
-                <option value="user">🛒 Customer</option>
-                <option value="admin">👑 Admin</option>
-              </select>
-            </div>
-          </div>
+          {/* Role selector removed for security - default is 'user' */}
 
           <motion.button 
             whileHover={{ scale: 1.02 }}

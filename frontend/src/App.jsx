@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Admin from './pages/Admin';
 import AdminOrdersPage from './pages/AdminOrdersPage';
+import AdminUsersPage from './pages/AdminUsersPage';
 import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
 import AuthSuccess from './pages/AuthSuccess';
@@ -29,6 +30,7 @@ const App = () => {
                 <Route path="/register" element={<Register />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/admin/orders" element={<AdminOrdersPage />} />
+                <Route path="/admin/users" element={<AdminUsersPage />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/orders" element={<OrdersPage />} />
                 <Route path="*" element={<Home />} />
