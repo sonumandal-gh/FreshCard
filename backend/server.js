@@ -9,6 +9,10 @@ require("./src/config/passport"); // Register Passport Strategies
 
 const app = express();
 
+// Trust Proxy for Render (needed for secure cookies and protocol detection)
+app.set('trust proxy', 1);
+
+
 // middleware
 app.use(cors({
   origin: [
