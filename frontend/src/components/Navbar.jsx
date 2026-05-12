@@ -205,9 +205,13 @@ const Navbar = () => {
           >
             <div className="container" style={{ padding: '2rem 1.2rem' }}>
               <div className="flex" style={{ flexDirection: 'column', gap: '1.5rem', alignItems: 'flex-start' }}>
-                <Link to="/" onClick={() => setIsMobileMenuOpen(false)} style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--dark)', width: '100%' }}>Shop</Link>
-                {user && (
-                  <Link to="/orders" onClick={() => setIsMobileMenuOpen(false)} style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--dark)', width: '100%' }}>My Orders</Link>
+                {(!user || user.role === 'user') && (
+                  <>
+                    <Link to="/" onClick={() => setIsMobileMenuOpen(false)} style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--dark)', width: '100%' }}>Shop</Link>
+                    {user && (
+                      <Link to="/orders" onClick={() => setIsMobileMenuOpen(false)} style={{ fontWeight: '700', fontSize: '1.1rem', color: 'var(--dark)', width: '100%' }}>My Orders</Link>
+                    )}
+                  </>
                 )}
                 {isAdmin && (
                   <>
