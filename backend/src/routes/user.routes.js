@@ -8,6 +8,7 @@ const { registerUser, loginUser, logoutUser, refreshAccessToken, googleAuthCallb
 const authMiddleware = require("../middlewares/auth.middleware");
 const adminMiddleware = require("../middlewares/admin.middleware");
 
+
 // protected route
 Router.get("/profile", authMiddleware, (req, res) => {
   res.json({
