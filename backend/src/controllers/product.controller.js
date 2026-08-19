@@ -1,5 +1,7 @@
 const Product = require("../models/product.model");
 const { uploadToCloudinary } = require("../services/cloudinary.service");
+const fs = require("fs");
+const path = require("path");
 
 //  Add Product
 exports.createProduct = async (req, res) => {
@@ -25,11 +27,29 @@ exports.createProduct = async (req, res) => {
           const result = await uploadToCloudinary(req.file.buffer);
           imageUrl = result.secure_url;
         } catch (uploadError) {
-          console.warn("Cloudinary Upload failed, proceeding without image:", uploadError.message);
-          // We can choose to continue or fail. For now, let's continue so the product is created.
+          console.warn("Cloudinary Upload failed, trying local upload fallback:", uploadError.message);
         }
-      } else {
-        console.warn("Cloudinary credentials missing in .env. Skipping upload.");
+      }
+
+      // Local fallback if Cloudinary not available or failed
+      if (!imageUrl) {
+        try {
+          const uploadDir = path.join(__dirname, "../../uploads");
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
+          const fileExtension = path.extname(req.file.originalname) || ".jpg";
+          const uniqueFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${fileExtension}`;
+          const filePath = path.join(uploadDir, uniqueFilename);
+          
+          await fs.promises.writeFile(filePath, req.file.buffer);
+          
+          const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get("host")}`;
+          imageUrl = `${baseUrl}/uploads/${uniqueFilename}`;
+          console.log("Local image saved at:", imageUrl);
+        } catch (localError) {
+          console.error("Local file save failed:", localError);
+        }
       }
     }
 
@@ -79,28 +99,68 @@ exports.getProducts = async (req, res) => {
 exports.updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
+    const { name, price, category, stock } = req.body;
 
-    const updatedProduct = await Product.findByIdAndUpdate(
-      id,
-      req.body,
-      { new: true }
-    );
-
-    // 🔥 not found check
-    if (!updatedProduct) {
+    const product = await Product.findById(id);
+    if (!product) {
       return res.status(404).json({
+        success: false,
         message: "Product not found"
       });
     }
 
+    let imageUrl = product.image;
+
+    if (req.file) {
+      if (process.env.CLOUD_NAME && process.env.API_KEY && process.env.API_SECRET) {
+        try {
+          const result = await uploadToCloudinary(req.file.buffer);
+          imageUrl = result.secure_url;
+        } catch (uploadError) {
+          console.warn("Cloudinary Upload failed, trying local upload fallback:", uploadError.message);
+        }
+      }
+
+      // Local fallback if Cloudinary not available or failed
+      if (!imageUrl || imageUrl === product.image) {
+        try {
+          const uploadDir = path.join(__dirname, "../../uploads");
+          if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+          }
+          const fileExtension = path.extname(req.file.originalname) || ".jpg";
+          const uniqueFilename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${fileExtension}`;
+          const filePath = path.join(uploadDir, uniqueFilename);
+          
+          await fs.promises.writeFile(filePath, req.file.buffer);
+          
+          const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get("host")}`;
+          imageUrl = `${baseUrl}/uploads/${uniqueFilename}`;
+          console.log("Local image saved at during update:", imageUrl);
+        } catch (localError) {
+          console.error("Local file save failed during update:", localError);
+        }
+      }
+    }
+
+    product.name = name !== undefined ? name : product.name;
+    product.price = price !== undefined ? Number(price) : product.price;
+    product.category = category !== undefined ? category : product.category;
+    product.stock = stock !== undefined ? Number(stock) : product.stock;
+    product.image = imageUrl;
+
+    const updatedProduct = await product.save();
+
     res.status(200).json({
-      message: "Product updated",
+      success: true,
+      message: "Product updated successfully",
       product: updatedProduct
     });
 
   } catch (error) {
     res.status(500).json({
-      message: "Server error",
+      success: false,
+      message: "Server error during product update",
       error: error.message
     });
   }

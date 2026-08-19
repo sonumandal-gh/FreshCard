@@ -38,6 +38,13 @@ export const productAPI = {
   delete: (id) => api.delete(`/products/${id}`),
 };
 
+export const categoryAPI = {
+  getAll: () => api.get('/categories'),
+  create: (categoryData) => api.post('/categories', categoryData),
+  update: (id, categoryData) => api.put(`/categories/${id}`, categoryData),
+  delete: (id) => api.delete(`/categories/${id}`),
+};
+
 export const orderAPI = {
   create: (orderData) => api.post('/orders', orderData),
   getUserOrders: () => api.get('/orders/my-orders'),

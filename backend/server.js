@@ -1,5 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const path = require("path");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const session = require('express-session');
@@ -26,6 +27,9 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Serve uploaded images statically
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
 // Session Setup
 app.use(session({
   secret: process.env.SESSION_SECRET || 'mysecret',
@@ -46,6 +50,7 @@ const userRoutes = require("./src/routes/user.routes");
 const productRoutes = require("./src/routes/product.routes");
 const orderRoutes = require("./src/routes/order.routes");
 const paymentRoutes = require("./src/routes/payment.routes");
+const categoryRoutes = require("./src/routes/category.routes");
 
 // MongoDB connection 
 mongoose.connect(process.env.MONGO_URL)
@@ -61,6 +66,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/categories", categoryRoutes);
 
 // server start
 const PORT = process.env.PORT || 5002;

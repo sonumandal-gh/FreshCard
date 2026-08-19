@@ -2,14 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Heart, Package, Star, ArrowRight, TrendingUp, ShieldCheck, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { productAPI } from '../api/api';
+import { productAPI, categoryAPI } from '../api/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState(['All', 'Vegetables', 'Fruits', 'Dairy', 'Snacks', 'Beverages']);
+  const [categories, setCategories] = useState(['All']);
   const [activeCategory, setActiveCategory] = useState('All');
   const { addToCart } = useCart();
   const { user } = useAuth();
@@ -31,6 +31,16 @@ const Home = () => {
       .catch(err => {
         console.error(err);
         setLoading(false);
+      });
+
+    categoryAPI.getAll()
+      .then(res => {
+        if (res.data.success && res.data.categories) {
+          setCategories(['All', ...res.data.categories.map(c => c.name)]);
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching categories:", err);
       });
   }, []);
 
@@ -215,34 +225,32 @@ const Home = () => {
                     boxShadow: '0 25px 50px -12px rgba(0,0,0,0.6), inset 0 -2px 10px rgba(0,0,0,0.2)' 
                   }}
                 >
-                  <div style={{ position: 'relative', height: '180px', background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.1), transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ position: 'relative', height: '180px', background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.1), transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                      <div style={{ 
-                       background: 'linear-gradient(135deg, var(--primary), #10b981)', 
-                       padding: '0.6rem 1rem', 
-                       borderRadius: '1rem', 
-                       position: 'absolute', 
-                       top: '1rem', 
-                       right: '1rem', 
-                       boxShadow: '0 10px 20px rgba(16, 185, 129, 0.4), inset 0 1px 1px rgba(255,255,255,0.5)',
-                       fontWeight: '900',
-                       color: 'white',
-                       zIndex: 2,
-                       fontSize: '0.9rem',
-                       textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+                        background: 'linear-gradient(135deg, var(--primary), #10b981)', 
+                        padding: '0.6rem 1rem', 
+                        borderRadius: '1rem', 
+                        position: 'absolute', 
+                        top: '1rem', 
+                        right: '1rem', 
+                        boxShadow: '0 10px 20px rgba(16, 185, 129, 0.4), inset 0 1px 1px rgba(255,255,255,0.5)',
+                        fontWeight: '900',
+                        color: 'white',
+                        zIndex: 2,
+                        fontSize: '0.9rem',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.3)'
                      }}>
                         ₹{product.price.toFixed(2)}
                      </div>
-                     <motion.div 
-                        whileHover={{ scale: 1.1, rotate: 5 }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                        style={{ cursor: 'pointer', width: '90px', height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                     >
-                        {product.image ? (
-                          <img src={product.image} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
-                        ) : (
-                          <Package size={60} style={{ color: 'rgba(255,255,255,0.3)' }} />
-                        )}
-                     </motion.div>
+                     {product.image && (
+                       <motion.img 
+                          whileHover={{ scale: 1.05 }}
+                          transition={{ duration: 0.3 }}
+                          src={product.image} 
+                          alt={product.name} 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} 
+                       />
+                     )}
                   </div>
 
                   <div style={{ padding: '2rem' }}>
