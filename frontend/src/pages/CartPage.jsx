@@ -32,10 +32,10 @@ const CartPage = () => {
       if (paymentMethod === 'razorpay') {
         // --- RAZORPAY FLOW ---
         const res = await api.post('/payment/create-order', { amount: totalPrice });
-        const { order } = res.data;
+        const { order, key } = res.data;
 
         const options = {
-          key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'YOUR_RAZORPAY_KEY_ID', 
+          key: key || import.meta.env.VITE_RAZORPAY_KEY_ID || 'YOUR_RAZORPAY_KEY_ID', 
           amount: order.amount,
           currency: order.currency,
           name: "FreshCart",
