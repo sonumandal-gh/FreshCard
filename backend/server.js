@@ -61,6 +61,13 @@ app.get("/api/health", (req, res) => {
   res.send("Backend API Health: OK");
 });
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "FreshCard Backend is running"
+  });
+});
+
 // routes connect
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
@@ -69,7 +76,7 @@ app.use("/api/payment", paymentRoutes);
 app.use("/api/categories", categoryRoutes);
 
 // server start
-const PORT = process.env.PORT || 5002;
+const PORT = process.env.PORT || 5003;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
