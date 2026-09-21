@@ -9,12 +9,13 @@ const {
 } = require("../controllers/product.controller");
 
 const authMiddleware = require("../middlewares/auth.middleware");
+const adminMiddleware = require("../middlewares/admin.middleware");
 const upload = require("../middlewares/upload.middleware");
 
-// Protected routes
-router.post("/",authMiddleware,upload.single("image"), createProduct);
-router.put("/:id", authMiddleware,upload.single("image"), updateProduct);
-router.delete("/:id", authMiddleware, deleteProduct);
+// Admin Protected routes
+router.post("/", authMiddleware, adminMiddleware, upload.single("image"), createProduct);
+router.put("/:id", authMiddleware, adminMiddleware, upload.single("image"), updateProduct);
+router.delete("/:id", authMiddleware, adminMiddleware, deleteProduct);
 
 // public routes
 router.get("/", getProducts);

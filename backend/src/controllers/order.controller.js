@@ -4,7 +4,7 @@ const Product = require("../models/product.model");
 // ORDER CREATE
 exports.createOrder = async (req, res) => {
   try {
-    const { products } = req.body;
+    const { products, paymentMethod, paymentId } = req.body;
 
     if (!products || products.length === 0) {
       return res.status(400).json({
@@ -39,7 +39,9 @@ exports.createOrder = async (req, res) => {
     const order = await Order.create({
       userId: req.user.id,
       products,
-      totalPrice
+      totalPrice,
+      paymentMethod: paymentMethod || 'cod',
+      paymentId: paymentId || ''
     });
 
     // Update stock after successful order creation
@@ -91,7 +93,8 @@ exports.getOrders = async (req, res) => {
   try {
     const orders = await Order.find()
       .populate("userId", "name email") // user ka data
-      .populate("products.productId", "name price");
+      .populate("products.productId", "name price image")
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,

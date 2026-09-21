@@ -115,7 +115,15 @@ const OrdersPage = () => {
                       <div key={idx} className="flex" style={{ gap: '1rem', background: '#f8fafc', padding: '1rem', borderRadius: '1rem' }}>
                         <div style={{ background: 'white', width: '50px', height: '50px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
                           {item.productId?.image ? (
-                            <img src={item.productId.image} alt={item.productId.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img 
+                              src={item.productId.image} 
+                              alt={item.productId.name} 
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60';
+                              }}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                            />
                           ) : (
                             <Package size={24} style={{ color: 'var(--primary)' }} />
                           )}

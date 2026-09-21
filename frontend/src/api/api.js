@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://api.sonumandal.in/api' : '/api'),
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -17,6 +18,46 @@ api.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Response interceptor to handle auto token refresh on 401
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      !originalRequest._retry &&
+      originalRequest.url &&
+      !originalRequest.url.includes('/users/login') &&
+      !originalRequest.url.includes('/users/register') &&
+      !originalRequest.url.includes('/users/refresh-token')
+    ) {
+      originalRequest._retry = true;
+      try {
+        const storedRefreshToken = localStorage.getItem('refreshToken');
+        const res = await axios.post(
+          `${api.defaults.baseURL}/users/refresh-token`,
+          { refreshToken: storedRefreshToken },
+          { withCredentials: true }
+        );
+        const { token: newAccessToken, refreshToken: newRefreshToken } = res.data;
+        if (newAccessToken) {
+          localStorage.setItem('token', newAccessToken);
+          if (newRefreshToken) {
+            localStorage.setItem('refreshToken', newRefreshToken);
+          }
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return api(originalRequest);
+        }
+      } catch (refreshErr) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+      }
+    }
+    return Promise.reject(error);
+  }
 );
 
 export const authAPI = {

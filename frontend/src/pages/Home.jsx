@@ -242,15 +242,17 @@ const Home = () => {
                      }}>
                         ₹{product.price.toFixed(2)}
                      </div>
-                     {product.image && (
-                       <motion.img 
-                          whileHover={{ scale: 1.05 }}
-                          transition={{ duration: 0.3 }}
-                          src={product.image} 
-                          alt={product.name} 
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} 
-                       />
-                     )}
+                     <motion.img 
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ duration: 0.3 }}
+                        src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60'} 
+                        alt={product.name} 
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60';
+                        }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} 
+                     />
                   </div>
 
                   <div style={{ padding: '2rem' }}>

@@ -259,7 +259,15 @@ const Admin = () => {
                   <td style={{ padding: '1.2rem', fontWeight: '600' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       {product.image ? (
-                        <img src={product.image} alt={product.name} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />
+                        <img 
+                          src={product.image} 
+                          alt={product.name} 
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60';
+                          }}
+                          style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} 
+                        />
                       ) : (
                         <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <Package size={20} style={{ color: '#aaa' }} />
