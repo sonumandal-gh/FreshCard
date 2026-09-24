@@ -25,6 +25,7 @@ const Admin = () => {
   const [editingCategory, setEditingCategory] = useState(null);
   const [categoryName, setCategoryName] = useState('');
 
+  const [modalSubmitting, setModalSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -47,7 +48,7 @@ const Admin = () => {
     }
   };
 
-  const fetchProducts = async (shouldSetLoading = true) => {
+  const fetchProducts = async (shouldSetLoading = false) => {
     if (shouldSetLoading) setLoading(true);
     try {
       const res = await productAPI.getAll();
@@ -100,7 +101,7 @@ const Admin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setModalSubmitting(true);
     try {
       const data = new FormData();
       data.append('name', formData.name);
@@ -117,11 +118,11 @@ const Admin = () => {
         await productAPI.create(data);
       }
       setShowModal(false);
-      fetchProducts();
+      await fetchProducts(false);
     } catch (err) {
       setError(err.response?.data?.message || 'Product action failed.');
     } finally {
-      setLoading(false);
+      setModalSubmitting(false);
     }
   };
 
@@ -129,7 +130,7 @@ const Admin = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await productAPI.delete(id);
-        fetchProducts();
+        await fetchProducts(false);
       } catch (err) {
         alert('Delete failed.');
       }
@@ -151,7 +152,7 @@ const Admin = () => {
 
   const handleCategorySubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setModalSubmitting(true);
     try {
       if (editingCategory) {
         await categoryAPI.update(editingCategory._id, { name: categoryName });
@@ -162,11 +163,11 @@ const Admin = () => {
       setCategoryName('');
       setEditingCategory(null);
       await fetchCategories();
-      await fetchProducts(false); // Sync products in case they reference renamed category
+      await fetchProducts(false);
     } catch (err) {
       setError(err.response?.data?.message || 'Category action failed.');
     } finally {
-      setLoading(false);
+      setModalSubmitting(false);
     }
   };
 
@@ -401,8 +402,8 @@ const Admin = () => {
                   </div>
                 )}
               </div>
-              <button type="submit" className="btn-primary" style={{ marginTop: '1rem', width: '100%' }}>
-                {editingProduct ? 'Update Product' : 'Create Product'}
+              <button type="submit" disabled={modalSubmitting} className="btn-primary" style={{ marginTop: '1rem', width: '100%' }}>
+                {modalSubmitting ? 'Saving...' : (editingProduct ? 'Update Product' : 'Create Product')}
               </button>
             </form>
           </div>
@@ -413,7 +414,7 @@ const Admin = () => {
       {showCategoryModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
           <div className="card" style={{ maxWidth: '400px', width: '90%', position: 'relative' }}>
-            <button onClick={() => setShowCategoryModal(false)} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}>
+            <button type="button" onClick={() => setShowCategoryModal(false)} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}>
               <X size={24} />
             </button>
             <h3 style={{ fontSize: '1.5rem', fontWeight: '800', marginBottom: '1.5rem' }}>
@@ -433,8 +434,8 @@ const Admin = () => {
                   required 
                 />
               </div>
-              <button type="submit" className="btn-primary" style={{ marginTop: '1rem', width: '100%' }}>
-                {editingCategory ? 'Update Category' : 'Create Category'}
+              <button type="submit" disabled={modalSubmitting} className="btn-primary" style={{ marginTop: '1rem', width: '100%' }}>
+                {modalSubmitting ? 'Saving...' : (editingCategory ? 'Update Category' : 'Create Category')}
               </button>
             </form>
           </div>
