@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { Package } from 'lucide-react';
-
-const DEFAULT_FALLBACK = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60";
+import { getImageUrl, DEFAULT_FALLBACK_IMAGE } from '../utils/imageUtils';
 
 export const ProductImage = ({ src, alt, style, className, ...props }) => {
   const [imgError, setImgError] = useState(false);
+  const resolvedSrc = getImageUrl(src);
 
   if (!src || imgError) {
     return (
@@ -14,7 +13,7 @@ export const ProductImage = ({ src, alt, style, className, ...props }) => {
           height: '100%', 
           display: 'flex', 
           alignItems: 'center', 
-          justify: 'center', 
+          justifyContent: 'center', 
           background: 'rgba(255, 255, 255, 0.05)', 
           borderRadius: style?.borderRadius || '8px',
           overflow: 'hidden',
@@ -23,7 +22,7 @@ export const ProductImage = ({ src, alt, style, className, ...props }) => {
         className={className}
       >
         <img 
-          src={DEFAULT_FALLBACK} 
+          src={DEFAULT_FALLBACK_IMAGE} 
           alt={alt || "Product"} 
           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
         />
@@ -33,7 +32,7 @@ export const ProductImage = ({ src, alt, style, className, ...props }) => {
 
   return (
     <img
-      src={src}
+      src={resolvedSrc}
       alt={alt || "Product"}
       style={style}
       className={className}
@@ -44,3 +43,4 @@ export const ProductImage = ({ src, alt, style, className, ...props }) => {
 };
 
 export default ProductImage;
+

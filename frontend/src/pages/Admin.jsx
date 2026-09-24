@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, X, Check, Package, AlertCircle } from 'lucide-reac
 import { productAPI, categoryAPI } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { getImageUrl, DEFAULT_FALLBACK_IMAGE } from '../utils/imageUtils';
 
 const Admin = () => {
   const { user, loading: authLoading } = useAuth();
@@ -260,11 +261,11 @@ const Admin = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                       {product.image ? (
                         <img 
-                          src={product.image} 
+                          src={getImageUrl(product.image)} 
                           alt={product.name} 
                           onError={(e) => {
                             e.target.onerror = null;
-                            e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60';
+                            e.target.src = DEFAULT_FALLBACK_IMAGE;
                           }}
                           style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} 
                         />
@@ -396,7 +397,7 @@ const Admin = () => {
                 />
                 {imagePreview && (
                   <div style={{ marginTop: '8px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #eee', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8f8f8' }}>
-                    <img src={imagePreview} alt="Preview" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
+                    <img src={getImageUrl(imagePreview)} alt="Preview" style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
                   </div>
                 )}
               </div>

@@ -4,6 +4,7 @@ import { Package, Clock, CheckCircle2, XCircle, ChevronRight, AlertCircle } from
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { getImageUrl, DEFAULT_FALLBACK_IMAGE } from '../utils/imageUtils';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
@@ -116,11 +117,11 @@ const OrdersPage = () => {
                         <div style={{ background: 'white', width: '50px', height: '50px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
                           {item.productId?.image ? (
                             <img 
-                              src={item.productId.image} 
+                              src={getImageUrl(item.productId.image)} 
                               alt={item.productId.name} 
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60';
+                                e.target.src = DEFAULT_FALLBACK_IMAGE;
                               }}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                             />

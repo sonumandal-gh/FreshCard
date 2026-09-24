@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { productAPI, categoryAPI } from '../api/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { getImageUrl, DEFAULT_FALLBACK_IMAGE } from '../utils/imageUtils';
 
 const Home = () => {
   const [products, setProducts] = useState([]);
@@ -245,11 +246,11 @@ const Home = () => {
                      <motion.img 
                         whileHover={{ scale: 1.05 }}
                         transition={{ duration: 0.3 }}
-                        src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60'} 
+                        src={getImageUrl(product.image)} 
                         alt={product.name} 
                         onError={(e) => {
                           e.target.onerror = null;
-                          e.target.src = 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60';
+                          e.target.src = DEFAULT_FALLBACK_IMAGE;
                         }}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} 
                      />

@@ -44,7 +44,11 @@ exports.createProduct = async (req, res) => {
           
           await fs.promises.writeFile(filePath, req.file.buffer);
           
-          const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get("host")}`;
+          const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+          const host = req.get("host");
+          const isHttps = protocol === 'https' || (process.env.FRONTEND_URL && process.env.FRONTEND_URL.startsWith('https'));
+          const scheme = isHttps && !host.includes('localhost') ? 'https' : protocol;
+          const baseUrl = process.env.BACKEND_URL || `${scheme}://${host}`;
           imageUrl = `${baseUrl}/uploads/${uniqueFilename}`;
           console.log("Local image saved at:", imageUrl);
         } catch (localError) {
@@ -134,7 +138,11 @@ exports.updateProduct = async (req, res) => {
           
           await fs.promises.writeFile(filePath, req.file.buffer);
           
-          const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get("host")}`;
+          const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+          const host = req.get("host");
+          const isHttps = protocol === 'https' || (process.env.FRONTEND_URL && process.env.FRONTEND_URL.startsWith('https'));
+          const scheme = isHttps && !host.includes('localhost') ? 'https' : protocol;
+          const baseUrl = process.env.BACKEND_URL || `${scheme}://${host}`;
           imageUrl = `${baseUrl}/uploads/${uniqueFilename}`;
           console.log("Local image saved at during update:", imageUrl);
         } catch (localError) {
