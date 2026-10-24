@@ -7,12 +7,30 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const syncUserAddressToStorage = (userData) => {
+    if (!userData) return;
+    try {
+      const existing = JSON.parse(localStorage.getItem('freshcart_delivery_address') || '{}');
+      const updated = {
+        fullName: userData.name || existing.fullName || '',
+        phone: userData.phone || existing.phone || '',
+        street: userData.address || existing.street || '',
+        city: userData.city || existing.city || '',
+        state: userData.state || existing.state || '',
+        pincode: userData.pincode || existing.pincode || '',
+        landmark: existing.landmark || ''
+      };
+      localStorage.setItem('freshcart_delivery_address', JSON.stringify(updated));
+    } catch (e) {}
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       authAPI.getProfile()
         .then(res => {
           setUser(res.data.user);
+          syncUserAddressToStorage(res.data.user);
         })
         .catch(() => {
           localStorage.removeItem('token');
@@ -32,6 +50,7 @@ export const AuthProvider = ({ children }) => {
     }
     const profile = await authAPI.getProfile();
     setUser(profile.data.user);
+    syncUserAddressToStorage(profile.data.user);
     return profile.data.user;
   };
 
@@ -39,7 +58,15 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', token);
     const profile = await authAPI.getProfile();
     setUser(profile.data.user);
+    syncUserAddressToStorage(profile.data.user);
     return profile.data.user;
+  };
+
+  const updateProfile = async (data) => {
+    const res = await authAPI.updateProfile(data);
+    setUser(res.data.user);
+    syncUserAddressToStorage(res.data.user);
+    return res.data.user;
   };
 
   const logout = () => {
@@ -53,7 +80,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithToken, logout, register }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithToken, logout, register, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

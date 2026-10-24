@@ -64,6 +64,7 @@ export const authAPI = {
   register: (userData) => api.post('/users/register', userData),
   login: (credentials) => api.post('/users/login', credentials),
   getProfile: () => api.get('/users/profile'),
+  updateProfile: (profileData) => api.put('/users/profile', profileData),
   getAllUsers: () => api.get('/users/all'),
   updateRole: (id, role) => api.put(`/users/${id}/role`, { role }),
 };

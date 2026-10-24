@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { orderAPI } from '../api/api';
-import { Package, Clock, CheckCircle2, XCircle, ChevronRight, AlertCircle } from 'lucide-react';
+import { Package, Clock, CheckCircle2, XCircle, ChevronRight, AlertCircle, MapPin, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { getImageUrl, DEFAULT_FALLBACK_IMAGE } from '../utils/imageUtils';
+import { getImageUrl, DEFAULT_FALLBACK_IMAGE, getProductFallbackImage } from '../utils/imageUtils';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
@@ -117,11 +117,11 @@ const OrdersPage = () => {
                         <div style={{ background: 'white', width: '50px', height: '50px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
                           {item.productId?.image ? (
                             <img 
-                              src={getImageUrl(item.productId.image)} 
+                              src={getImageUrl(item.productId.image, item.productId.name, item.productId.category)} 
                               alt={item.productId.name} 
                               onError={(e) => {
                                 e.target.onerror = null;
-                                e.target.src = DEFAULT_FALLBACK_IMAGE;
+                                e.target.src = getProductFallbackImage(item.productId.name, item.productId.category);
                               }}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                             />
@@ -141,13 +141,34 @@ const OrdersPage = () => {
                     ))}
                   </div>
 
-                  <div className="flex-between" style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px dashed #e2e8f0' }}>
+                  {/* Delivery Location Info */}
+                  {order.deliveryAddress && (order.deliveryAddress.street || order.deliveryAddress.city) && (
+                    <div style={{ marginTop: '1.2rem', padding: '0.85rem 1.2rem', background: '#f8fafc', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid #e2e8f0' }}>
+                      <MapPin size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />
+                      <div style={{ fontSize: '0.88rem' }}>
+                        <span style={{ fontWeight: '800', color: 'var(--dark)' }}>Delivering to: </span>
+                        <span style={{ color: 'var(--dark)' }}>
+                          {order.deliveryAddress.street}, {order.deliveryAddress.city}{order.deliveryAddress.pincode ? ` - ${order.deliveryAddress.pincode}` : ''}
+                        </span>
+                        {order.deliveryAddress.phone && (
+                          <span style={{ color: 'var(--gray)', marginLeft: '8px' }}>• 📞 {order.deliveryAddress.phone}</span>
+                        )}
+                        {order.deliveryAddress.landmark && (
+                          <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
+                            Instructions: {order.deliveryAddress.landmark}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex-between" style={{ marginTop: '1.5rem', paddingTop: '1.2rem', borderTop: '1px dashed #e2e8f0' }}>
                     <div style={{ color: 'var(--gray)', fontWeight: '600', fontSize: '0.95rem' }}>
                       {order.products.length} {order.products.length === 1 ? 'Item' : 'Items'}
                     </div>
                     <div className="flex" style={{ gap: '1rem' }}>
                       <span style={{ color: 'var(--gray)', fontWeight: '600' }}>Total:</span>
-                      <span style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--primary)' }}>₹{order.totalPrice.toFixed(2)}</span>
+                      <span style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--primary)' }}>₹{Number(order.totalPrice || 0).toFixed(2)}</span>
                     </div>
                   </div>
                 </motion.div>

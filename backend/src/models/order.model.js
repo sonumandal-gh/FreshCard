@@ -35,6 +35,17 @@ const orderSchema = new mongoose.Schema(
     paymentId: {
       type: String,
       default: ""
+    },
+    deliveryAddress: {
+      fullName: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      street: { type: String, default: "" },
+      city: { type: String, default: "" },
+      state: { type: String, default: "" },
+      pincode: { type: String, default: "" },
+      landmark: { type: String, default: "" },
+      lat: { type: Number },
+      lng: { type: Number }
     }
   },
   { timestamps: true }

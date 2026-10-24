@@ -151,14 +151,14 @@ const AdminUsersPage = () => {
                       <select 
                         value={u.role}
                         onChange={(e) => handleRoleChange(u._id, e.target.value)}
-                        disabled={u._id === user.id} // Prevent self-demotion
+                        disabled={u._id === (user?._id || user?.id)} // Prevent self-demotion
                         style={{ 
                           padding: '0.4rem 0.8rem', 
                           borderRadius: '8px', 
                           fontSize: '0.85rem', 
                           fontWeight: '600',
                           border: '1px solid #e2e8f0',
-                          cursor: u._id === user.id ? 'not-allowed' : 'pointer',
+                          cursor: u._id === (user?._id || user?.id) ? 'not-allowed' : 'pointer',
                           background: 'white'
                         }}
                       >

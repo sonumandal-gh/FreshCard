@@ -47,10 +47,10 @@ exports.createProduct = async (req, res) => {
           const protocol = req.headers['x-forwarded-proto'] || req.protocol;
           const host = req.get("host");
           const isHttps = protocol === 'https' || (process.env.FRONTEND_URL && process.env.FRONTEND_URL.startsWith('https'));
-          const scheme = isHttps && !host.includes('localhost') ? 'https' : protocol;
-          const baseUrl = process.env.BACKEND_URL || `${scheme}://${host}`;
-          imageUrl = `${baseUrl}/uploads/${uniqueFilename}`;
-          console.log("Local image saved at:", imageUrl);
+          const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+          const baseUrl = !isLocal && process.env.BACKEND_URL ? process.env.BACKEND_URL : `${scheme}://${host}`;
+          imageUrl = `/uploads/${uniqueFilename}`;
+          console.log("Local image saved at:", `${baseUrl}/uploads/${uniqueFilename}`);
         } catch (localError) {
           console.error("Local file save failed:", localError);
         }
@@ -141,10 +141,10 @@ exports.updateProduct = async (req, res) => {
           const protocol = req.headers['x-forwarded-proto'] || req.protocol;
           const host = req.get("host");
           const isHttps = protocol === 'https' || (process.env.FRONTEND_URL && process.env.FRONTEND_URL.startsWith('https'));
-          const scheme = isHttps && !host.includes('localhost') ? 'https' : protocol;
-          const baseUrl = process.env.BACKEND_URL || `${scheme}://${host}`;
-          imageUrl = `${baseUrl}/uploads/${uniqueFilename}`;
-          console.log("Local image saved at during update:", imageUrl);
+          const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+          const baseUrl = !isLocal && process.env.BACKEND_URL ? process.env.BACKEND_URL : `${scheme}://${host}`;
+          imageUrl = `/uploads/${uniqueFilename}`;
+          console.log("Local image saved at during update:", `${baseUrl}/uploads/${uniqueFilename}`);
         } catch (localError) {
           console.error("Local file save failed during update:", localError);
         }

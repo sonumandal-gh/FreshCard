@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { orderAPI } from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, AlertCircle, Package, User } from 'lucide-react';
+import { ClipboardList, AlertCircle, Package, User, MapPin, ExternalLink, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const AdminOrdersPage = () => {
@@ -79,6 +79,7 @@ const AdminOrdersPage = () => {
               <tr>
                 <th style={{ padding: '1.2rem', color: 'var(--gray)', fontWeight: '700', fontSize: '0.9rem' }}>Order ID & Date</th>
                 <th style={{ padding: '1.2rem', color: 'var(--gray)', fontWeight: '700', fontSize: '0.9rem' }}>Customer</th>
+                <th style={{ padding: '1.2rem', color: 'var(--gray)', fontWeight: '700', fontSize: '0.9rem' }}>Delivery Location</th>
                 <th style={{ padding: '1.2rem', color: 'var(--gray)', fontWeight: '700', fontSize: '0.9rem' }}>Items</th>
                 <th style={{ padding: '1.2rem', color: 'var(--gray)', fontWeight: '700', fontSize: '0.9rem' }}>Total Amount</th>
                 <th style={{ padding: '1.2rem', color: 'var(--gray)', fontWeight: '700', fontSize: '0.9rem' }}>Action / Status</th>
@@ -101,6 +102,82 @@ const AdminOrdersPage = () => {
                       <span style={{ color: 'var(--error)' }}>Deleted User</span>
                     )}
                   </td>
+                  <td style={{ padding: '1.2rem' }}>
+                    {(() => {
+                      const addr = order.deliveryAddress || {};
+                      const usr = order.userId || {};
+                      const street = addr.street || usr.address || '';
+                      const city = addr.city || usr.city || '';
+                      const pincode = addr.pincode || usr.pincode || '';
+                      const phone = addr.phone || usr.phone || '';
+                      const recipient = addr.fullName || usr.name || 'Customer';
+                      const landmark = addr.landmark || '';
+                      const lat = addr.lat;
+                      const lng = addr.lng;
+                      const hasLocation = Boolean(street || city || (lat && lng));
+
+                      if (!hasLocation) {
+                        return (
+                          <span style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: '700', background: '#fef2f2', padding: '4px 8px', borderRadius: '6px' }}>
+                            ⚠️ No address specified
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <div style={{ maxWidth: '300px' }}>
+                          <div style={{ fontWeight: '800', color: 'var(--dark)', display: 'flex', alignItems: 'flex-start', gap: '6px', fontSize: '0.92rem', lineHeight: '1.25' }}>
+                            <MapPin size={16} style={{ color: '#10b981', flexShrink: 0, marginTop: '2px' }} />
+                            <span>{street ? `${street}, ` : ''}{city}{pincode ? ` - ${pincode}` : ''}</span>
+                          </div>
+
+                          <div style={{ fontSize: '0.82rem', color: '#475569', marginTop: '4px' }}>
+                            <span>To: <strong>{recipient}</strong></span>
+                            {phone && (
+                              <span style={{ marginLeft: '8px', color: '#059669', fontWeight: '700' }}>
+                                📞 <a href={`tel:${phone}`} style={{ color: '#059669', textDecoration: 'underline' }}>{phone}</a>
+                              </span>
+                            )}
+                          </div>
+
+                          {landmark && (
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '3px', fontStyle: 'italic' }}>
+                              Note: {landmark}
+                            </div>
+                          )}
+
+                          {lat && lng && (
+                            <div style={{ fontSize: '0.72rem', color: '#0284c7', background: '#e0f2fe', padding: '2px 6px', borderRadius: '4px', display: 'inline-block', marginTop: '4px', fontWeight: '700' }}>
+                              📍 GPS: {Number(lat).toFixed(4)}, {Number(lng).toFixed(4)}
+                            </div>
+                          )}
+
+                          <div style={{ marginTop: '6px' }}>
+                            <a 
+                              href={lat && lng ? `https://www.google.com/maps?q=${lat},${lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([street, city, pincode].filter(Boolean).join(', '))}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{ 
+                                fontSize: '0.75rem', 
+                                color: '#059669', 
+                                fontWeight: '800', 
+                                display: 'inline-flex', 
+                                alignItems: 'center', 
+                                gap: '4px', 
+                                background: '#ecfdf5',
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                border: '1px solid #a7f3d0',
+                                textDecoration: 'none'
+                              }}
+                            >
+                              🗺️ Open in Google Maps <ExternalLink size={10} />
+                            </a>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td style={{ padding: '1.2rem', fontWeight: '600', color: 'var(--dark)' }}>
                     {order.products.length} Items
                     <div style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '500' }}>
@@ -109,7 +186,7 @@ const AdminOrdersPage = () => {
                     </div>
                   </td>
                   <td style={{ padding: '1.2rem', fontWeight: '900', color: 'var(--dark)', fontSize: '1.1rem' }}>
-                    ₹{order.totalPrice.toFixed(2)}
+                    ₹{Number(order.totalPrice || 0).toFixed(2)}
                   </td>
                   <td style={{ padding: '1.2rem' }}>
                     <select 

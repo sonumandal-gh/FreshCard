@@ -4,7 +4,7 @@ const Router = express.Router();
 
 Router.get("/test", (req, res) => res.send("User Router is working!"));
 
-const { registerUser, loginUser, logoutUser, refreshAccessToken, googleAuthCallback, getAllUsers, updateUserRole } = require("../controllers/user.controller");
+const { registerUser, loginUser, logoutUser, refreshAccessToken, googleAuthCallback, getAllUsers, updateUserRole, updateUserProfile } = require("../controllers/user.controller");
 const authMiddleware = require("../middlewares/auth.middleware");
 const adminMiddleware = require("../middlewares/admin.middleware");
 
@@ -16,6 +16,7 @@ Router.get("/profile", authMiddleware, (req, res) => {
     user: req.user
   });
 });
+Router.put("/profile", authMiddleware, updateUserProfile);
 
 Router.post("/register", registerUser);
 Router.post("/login", loginUser);

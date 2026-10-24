@@ -1,10 +1,11 @@
 const Order = require("../models/order.model");
 const Product = require("../models/product.model");
+const User = require("../models/user.model");
 
 // ORDER CREATE
 exports.createOrder = async (req, res) => {
   try {
-    const { products, paymentMethod, paymentId } = req.body;
+    const { products, paymentMethod, paymentId, deliveryAddress } = req.body;
 
     if (!products || products.length === 0) {
       return res.status(400).json({
@@ -36,13 +37,44 @@ exports.createOrder = async (req, res) => {
       totalPrice += product.price * item.quantity;
     }
 
+    // Retrieve user profile to ensure fallback contact and address info
+    const userProfile = await User.findById(req.user.id || req.user._id);
+
+    const finalDeliveryAddress = {
+      fullName: (deliveryAddress?.fullName || userProfile?.name || 'Customer').trim(),
+      phone: (deliveryAddress?.phone || userProfile?.phone || '').trim(),
+      street: (deliveryAddress?.street || userProfile?.address || '').trim(),
+      city: (deliveryAddress?.city || userProfile?.city || '').trim(),
+      state: (deliveryAddress?.state || userProfile?.state || '').trim(),
+      pincode: (deliveryAddress?.pincode || userProfile?.pincode || '').trim(),
+      landmark: (deliveryAddress?.landmark || '').trim(),
+      lat: deliveryAddress?.lat || null,
+      lng: deliveryAddress?.lng || null
+    };
+
     const order = await Order.create({
-      userId: req.user.id,
+      userId: req.user.id || req.user._id,
       products,
-      totalPrice,
+      totalPrice: Math.round(totalPrice * 100) / 100,
       paymentMethod: paymentMethod || 'cod',
-      paymentId: paymentId || ''
+      paymentId: paymentId || '',
+      deliveryAddress: finalDeliveryAddress
     });
+
+    // Also update User profile address for future orders
+    if (finalDeliveryAddress.street || finalDeliveryAddress.city || finalDeliveryAddress.phone) {
+      try {
+        await User.findByIdAndUpdate(req.user.id || req.user._id, {
+          address: finalDeliveryAddress.street || userProfile?.address || '',
+          city: finalDeliveryAddress.city || userProfile?.city || '',
+          state: finalDeliveryAddress.state || userProfile?.state || '',
+          pincode: finalDeliveryAddress.pincode || userProfile?.pincode || '',
+          phone: finalDeliveryAddress.phone || userProfile?.phone || ''
+        });
+      } catch (userErr) {
+        console.warn("Could not sync address to user profile:", userErr.message);
+      }
+    }
 
     // Update stock after successful order creation
     for (let item of products) {
@@ -70,6 +102,7 @@ exports.createOrder = async (req, res) => {
 exports.getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ userId: req.user.id })
+      .populate("userId", "name email phone address city state pincode")
       .populate("products.productId", "name price image")
       .sort({ createdAt: -1 });
 
@@ -92,7 +125,7 @@ exports.getMyOrders = async (req, res) => {
 exports.getOrders = async (req, res) => {
   try {
     const orders = await Order.find()
-      .populate("userId", "name email") // user ka data
+      .populate("userId", "name email phone address city state pincode") // user ka data with address & contact
       .populate("products.productId", "name price image")
       .sort({ createdAt: -1 });
 

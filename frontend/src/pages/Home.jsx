@@ -1,20 +1,101 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart, Heart, Package, Star, ArrowRight, TrendingUp, ShieldCheck, Zap } from 'lucide-react';
+import { ShoppingCart, Heart, Package, Star, ArrowRight, TrendingUp, ShieldCheck, Zap, MapPin, Navigation, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { productAPI, categoryAPI } from '../api/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { getImageUrl, DEFAULT_FALLBACK_IMAGE } from '../utils/imageUtils';
+import { getImageUrl, DEFAULT_FALLBACK_IMAGE, getProductFallbackImage } from '../utils/imageUtils';
 
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState(['All']);
   const [activeCategory, setActiveCategory] = useState('All');
+  const [deliveryLocation, setDeliveryLocation] = useState('Select Location');
+  const [detectingGps, setDetectingGps] = useState(false);
   const { addToCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Dynamic location sync
+  const refreshDeliveryLocation = () => {
+    try {
+      let city = '';
+      let pincode = '';
+      const saved = localStorage.getItem('freshcart_delivery_address');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        city = parsed.city || '';
+        pincode = parsed.pincode || '';
+      }
+      if (user) {
+        if (!city && (user.city || user.address)) city = user.city || user.address;
+        if (!pincode && user.pincode) pincode = user.pincode;
+      }
+      if (city || pincode) {
+        setDeliveryLocation(`${city || 'Deliver'}${pincode ? ` (${pincode})` : ''}`);
+      } else {
+        setDeliveryLocation('Select Delivery Location');
+      }
+    } catch (e) {
+      setDeliveryLocation('Select Delivery Location');
+    }
+  };
+
+  useEffect(() => {
+    refreshDeliveryLocation();
+    const handleUpdate = () => refreshDeliveryLocation();
+    window.addEventListener('freshcart_address_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('freshcart_address_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [user]);
+
+  const handleQuickGpsDetect = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+    setDetectingGps(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
+          const addr = data.address || {};
+          const city = addr.city || addr.town || addr.village || addr.suburb || 'My Location';
+          const pincode = addr.postcode || '';
+
+          const locText = `${city}${pincode ? ` (${pincode})` : ''}`;
+          setDeliveryLocation(locText);
+
+          const existing = JSON.parse(localStorage.getItem('freshcart_delivery_address') || '{}');
+          localStorage.setItem('freshcart_delivery_address', JSON.stringify({
+            ...existing,
+            city,
+            pincode,
+            lat: latitude,
+            lng: longitude
+          }));
+
+          window.dispatchEvent(new Event('freshcart_address_updated'));
+        } catch (err) {
+          setDeliveryLocation(`Location (${latitude.toFixed(2)}, ${longitude.toFixed(2)})`);
+        } finally {
+          setDetectingGps(false);
+        }
+      },
+      () => {
+        setDetectingGps(false);
+        alert("Could not detect location. Please set location in Navbar.");
+      },
+      { timeout: 8000 }
+    );
+  };
 
   // Admin ko redirect karo admin dashboard pe
   useEffect(() => {
@@ -148,6 +229,63 @@ const Home = () => {
 
       {/* Main Content */}
       <section id="products-grid" className="container" style={{ position: 'relative', marginTop: '-4rem', zIndex: 10 }}>
+        {/* Prominent Quick-Delivery Location Bar */}
+        <motion.div 
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: '1.5rem',
+            padding: '1.2rem 1.8rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            marginBottom: '2rem',
+            boxShadow: '0 20px 40px -15px rgba(0,0,0,0.5)'
+          }}
+        >
+          <div className="flex" style={{ gap: '14px', alignItems: 'center' }}>
+            <div style={{ background: '#10b981', color: 'white', padding: '12px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 16px -4px rgba(16, 185, 129, 0.5)' }}>
+              <MapPin size={24} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.75rem', color: '#34d399', fontWeight: '800', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                ⚡ Delivering in 15 Minutes To:
+              </div>
+              <div style={{ fontSize: '1.2rem', fontWeight: '900', color: 'white' }}>
+                {deliveryLocation}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleQuickGpsDetect}
+            disabled={detectingGps}
+            style={{
+              padding: '0.75rem 1.5rem',
+              borderRadius: '12px',
+              background: 'rgba(16, 185, 129, 0.15)',
+              border: '1.5px solid #10b981',
+              color: '#34d399',
+              fontWeight: '800',
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <Navigation size={18} className={detectingGps ? 'animate-spin' : ''} />
+            {detectingGps ? 'Detecting GPS...' : 'Detect GPS Location'}
+          </button>
+        </motion.div>
+
         {/* Category Navigation */}
         <div 
           className="scroll-x category-bar"
@@ -246,11 +384,11 @@ const Home = () => {
                      <motion.img 
                         whileHover={{ scale: 1.05 }}
                         transition={{ duration: 0.3 }}
-                        src={getImageUrl(product.image)} 
+                        src={getImageUrl(product.image, product.name, product.category)} 
                         alt={product.name} 
                         onError={(e) => {
                           e.target.onerror = null;
-                          e.target.src = DEFAULT_FALLBACK_IMAGE;
+                          e.target.src = getProductFallbackImage(product.name, product.category);
                         }}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} 
                      />

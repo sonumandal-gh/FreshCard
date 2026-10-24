@@ -28,6 +28,26 @@ const userSchema = new mongoose.Schema(
       enum: ["user", "admin", "seller"],
       default: "user"
     },
+    phone: {
+      type: String,
+      default: ""
+    },
+    address: {
+      type: String,
+      default: ""
+    },
+    city: {
+      type: String,
+      default: ""
+    },
+    state: {
+      type: String,
+      default: ""
+    },
+    pincode: {
+      type: String,
+      default: ""
+    },
     refreshToken: {
       type: String
     },
