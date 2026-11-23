@@ -141,26 +141,55 @@ const OrdersPage = () => {
                     ))}
                   </div>
 
-                  {/* Delivery Location Info */}
-                  {order.deliveryAddress && (order.deliveryAddress.street || order.deliveryAddress.city) && (
-                    <div style={{ marginTop: '1.2rem', padding: '0.85rem 1.2rem', background: '#f8fafc', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '10px', border: '1px solid #e2e8f0' }}>
+                  {/* User Role: Clean Delivery Location & Delivery Partner Contact */}
+                  <div style={{ 
+                    marginTop: '1.2rem', 
+                    padding: '0.9rem 1.3rem', 
+                    background: '#f8fafc', 
+                    borderRadius: '12px', 
+                    border: '1px solid #e2e8f0',
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    flexWrap: 'wrap', 
+                    gap: '12px' 
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <MapPin size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />
                       <div style={{ fontSize: '0.88rem' }}>
                         <span style={{ fontWeight: '800', color: 'var(--dark)' }}>Delivering to: </span>
-                        <span style={{ color: 'var(--dark)' }}>
-                          {order.deliveryAddress.street}, {order.deliveryAddress.city}{order.deliveryAddress.pincode ? ` - ${order.deliveryAddress.pincode}` : ''}
+                        <span style={{ color: 'var(--dark)', fontWeight: '600' }}>
+                          {order.deliveryAddress?.city 
+                            ? `${order.deliveryAddress.city}${order.deliveryAddress.pincode ? ` (${order.deliveryAddress.pincode})` : ''}` 
+                            : (user?.city || 'Your Registered Location')}
                         </span>
-                        {order.deliveryAddress.phone && (
-                          <span style={{ color: 'var(--gray)', marginLeft: '8px' }}>• 📞 {order.deliveryAddress.phone}</span>
-                        )}
-                        {order.deliveryAddress.landmark && (
-                          <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
-                            Instructions: {order.deliveryAddress.landmark}
-                          </div>
-                        )}
                       </div>
                     </div>
-                  )}
+
+                    {/* Delivery Partner Contact for User */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <a 
+                        href="tel:+919830012345"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '0.45rem 1rem',
+                          background: '#ecfdf5',
+                          border: '1.5px solid #16a34a',
+                          borderRadius: '8px',
+                          color: '#15803d',
+                          fontSize: '0.82rem',
+                          fontWeight: '800',
+                          textDecoration: 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <Phone size={14} />
+                        <span>Call Delivery Partner</span>
+                      </a>
+                    </div>
+                  </div>
 
                   <div className="flex-between" style={{ marginTop: '1.5rem', paddingTop: '1.2rem', borderTop: '1px dashed #e2e8f0' }}>
                     <div style={{ color: 'var(--gray)', fontWeight: '600', fontSize: '0.95rem' }}>
