@@ -166,11 +166,12 @@ const Navbar = () => {
           left: 0,
           right: 0,
           zIndex: 1000,
-          padding: scrolled ? '0.8rem 0' : '1.3rem 0',
-          transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-          background: scrolled ? 'rgba(255, 255, 255, 0.85)' : (isMobileMenuOpen ? 'white' : 'transparent'),
-          backdropFilter: scrolled || isMobileMenuOpen ? 'blur(20px)' : 'none',
-          borderBottom: scrolled || isMobileMenuOpen ? '1px solid rgba(0, 0, 0, 0.05)' : '1px solid transparent'
+          padding: scrolled ? '0.8rem 0' : '1.1rem 0',
+          transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+          background: 'rgba(255, 255, 255, 0.94)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(22, 48, 36, 0.08)',
+          boxShadow: scrolled ? '0 4px 20px -2px rgba(0, 0, 0, 0.05)' : 'none'
         }}
       >
         <div className="container flex-between" style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -195,7 +196,7 @@ const Navbar = () => {
                 fontSize: '1.4rem',
                 fontWeight: '900',
                 letterSpacing: '-0.03em',
-                color: scrolled || isMobileMenuOpen ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)')
+                color: 'var(--dark)'
               }}>
                 Fresh<span style={{ color: 'var(--primary)' }}>Cart.</span>
               </span>
@@ -210,16 +211,16 @@ const Navbar = () => {
                 gap: '8px',
                 padding: '6px 14px',
                 borderRadius: '24px',
-                background: (location.pathname === '/' && !scrolled && !isMobileMenuOpen) ? 'rgba(255, 255, 255, 0.14)' : '#f1f5f9',
-                border: (location.pathname === '/' && !scrolled && !isMobileMenuOpen) ? '1px solid rgba(255, 255, 255, 0.25)' : '1px solid #cbd5e1',
+                background: '#f8faf9',
+                border: '1px solid #e2ece5',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                boxShadow: (location.pathname === '/' && !scrolled && !isMobileMenuOpen) ? '0 4px 12px rgba(0,0,0,0.1)' : '0 2px 4px rgba(0,0,0,0.04)'
+                boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
               }}
               title="Click to set or change delivery location"
             >
               <div style={{
-                background: (location.pathname === '/' && !scrolled && !isMobileMenuOpen) ? 'rgba(16, 185, 129, 0.2)' : '#ecfdf5',
+                background: '#ecfdf5',
                 padding: '5px',
                 borderRadius: '50%',
                 display: 'flex',
@@ -233,7 +234,7 @@ const Navbar = () => {
                   fontSize: '0.65rem',
                   fontWeight: '800',
                   textTransform: 'uppercase',
-                  color: (location.pathname === '/' && !scrolled && !isMobileMenuOpen) ? '#34d399' : '#059669',
+                  color: '#059669',
                   letterSpacing: '0.04em'
                 }}>
                   {isAdmin ? '⚡ Store Delivery Hub' : '⚡ 15 Mins Delivery'}
@@ -241,7 +242,7 @@ const Navbar = () => {
                 <div style={{
                   fontSize: '0.85rem',
                   fontWeight: '800',
-                  color: (location.pathname === '/' && !scrolled && !isMobileMenuOpen) ? '#ffffff' : '#0f172a',
+                  color: '#0f172a',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -250,7 +251,7 @@ const Navbar = () => {
                   {currentLocation}
                 </div>
               </div>
-              <ChevronDown size={14} style={{ opacity: 0.7, color: (location.pathname === '/' && !scrolled && !isMobileMenuOpen) ? '#ffffff' : '#475569' }} />
+              <ChevronDown size={14} style={{ opacity: 0.7, color: '#475569' }} />
             </div>
           </div>
 
@@ -258,11 +259,11 @@ const Navbar = () => {
           <div className="navbar-desktop flex" style={{ gap: '2.5rem' }}>
             {(!user || user.role === 'user') && (
               <>
-                <Link to="/" style={{ fontWeight: '700', fontSize: '0.95rem', color: scrolled ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)'), display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Link to="/" style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Package size={18} /> Shop
                 </Link>
                 {user && (
-                  <Link to="/orders" style={{ fontWeight: '700', fontSize: '0.95rem', color: scrolled ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)'), display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Link to="/orders" style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <ClipboardList size={18} /> My Orders
                   </Link>
                 )}
@@ -271,13 +272,13 @@ const Navbar = () => {
 
             {isAdmin && (
               <>
-                <Link to="/admin" style={{ fontWeight: '700', fontSize: '0.95rem', color: scrolled ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)'), display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Link to="/admin" style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <LayoutDashboard size={18} /> Inventory
                 </Link>
-                <Link to="/admin/orders" style={{ fontWeight: '700', fontSize: '0.95rem', color: scrolled ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)'), display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Link to="/admin/orders" style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <ClipboardList size={18} /> Orders & Location
                 </Link>
-                <Link to="/admin/users" style={{ fontWeight: '700', fontSize: '0.95rem', color: scrolled ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)'), display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Link to="/admin/users" style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Users size={18} /> Users
                 </Link>
               </>
@@ -296,9 +297,9 @@ const Navbar = () => {
                   style={{
                     position: 'relative',
                     padding: '10px',
-                    background: scrolled || isMobileMenuOpen ? '#f1f5f9' : 'rgba(255,255,255,0.1)',
+                    background: '#f1f5f9',
                     borderRadius: '12px',
-                    color: scrolled || isMobileMenuOpen ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)')
+                    color: 'var(--dark)'
                   }}
                 >
                   <ShoppingCart size={20} />
@@ -324,10 +325,10 @@ const Navbar = () => {
                 <div
                   className="flex"
                   style={{
-                    background: scrolled ? 'white' : 'rgba(255,255,255,0.1)',
+                    background: '#f8fafc',
                     padding: '4px 12px',
                     borderRadius: '30px',
-                    border: '1px solid rgba(0,0,0,0.05)',
+                    border: '1px solid rgba(0,0,0,0.06)',
                     gap: '10px',
                     cursor: 'pointer'
                   }}
@@ -335,13 +336,13 @@ const Navbar = () => {
                   <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '0.8rem' }}>
                     {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                   </div>
-                  <button onClick={handleLogout} style={{ background: 'none', color: scrolled ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)'), fontWeight: '700', fontSize: '0.85rem' }}>
+                  <button onClick={handleLogout} style={{ background: 'none', color: 'var(--dark)', fontWeight: '700', fontSize: '0.85rem' }}>
                     Logout
                   </button>
                 </div>
               ) : (
                 <div className="flex" style={{ gap: '1rem' }}>
-                  <Link to="/login" style={{ fontWeight: '700', color: scrolled ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)') }}>Login</Link>
+                  <Link to="/login" style={{ fontWeight: '700', color: 'var(--dark)' }}>Login</Link>
                   <Link to="/register" className="btn-primary" style={{ padding: '0.7rem 1.4rem', borderRadius: '12px', fontSize: '0.85rem' }}>Get Started</Link>
                 </div>
               )}
@@ -355,8 +356,8 @@ const Navbar = () => {
                 cursor: 'pointer',
                 padding: '8px',
                 borderRadius: '10px',
-                background: scrolled || isMobileMenuOpen ? '#f1f5f9' : 'rgba(255,255,255,0.1)',
-                color: scrolled || isMobileMenuOpen ? 'var(--dark)' : (location.pathname === '/' ? 'white' : 'var(--dark)')
+                background: '#f1f5f9',
+                color: 'var(--dark)'
               }}
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
