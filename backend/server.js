@@ -51,6 +51,7 @@ const productRoutes = require("./src/routes/product.routes");
 const orderRoutes = require("./src/routes/order.routes");
 const paymentRoutes = require("./src/routes/payment.routes");
 const categoryRoutes = require("./src/routes/category.routes");
+const settingsRoutes = require("./src/routes/settings.routes");
 
 // MongoDB connection 
 mongoose.connect(process.env.MONGO_URL)
@@ -74,6 +75,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payment", paymentRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/settings", settingsRoutes);
 
 // server start
 const PORT = process.env.PORT || 5002;

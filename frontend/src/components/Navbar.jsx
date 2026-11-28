@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, LogOut, Search, Menu, Package, LayoutDashboard, ClipboardList, Users, MapPin, Navigation, ChevronDown, X, Check } from 'lucide-react';
+import { ShoppingCart, User, LogOut, Search, Menu, Package, LayoutDashboard, ClipboardList, Users, MapPin, Navigation, ChevronDown, X, Check, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { getDeliverySettings } from '../utils/settingsUtils';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -19,6 +20,20 @@ const Navbar = () => {
   const [customCity, setCustomCity] = useState('');
   const [customPincode, setCustomPincode] = useState('');
   const [detectingGps, setDetectingGps] = useState(false);
+  const [deliverySettings, setDeliverySettings] = useState(getDeliverySettings());
+
+  useEffect(() => {
+    const handleSettingsUpdate = (e) => {
+      if (e.detail) setDeliverySettings(e.detail);
+      else setDeliverySettings(getDeliverySettings());
+    };
+    window.addEventListener('freshcart_settings_updated', handleSettingsUpdate);
+    window.addEventListener('storage', handleSettingsUpdate);
+    return () => {
+      window.removeEventListener('freshcart_settings_updated', handleSettingsUpdate);
+      window.removeEventListener('storage', handleSettingsUpdate);
+    };
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -237,7 +252,7 @@ const Navbar = () => {
                   color: '#059669',
                   letterSpacing: '0.04em'
                 }}>
-                  {isAdmin ? '⚡ Store Delivery Hub' : '⚡ 15 Mins Delivery'}
+                  {isAdmin ? '⚡ Store Delivery Hub' : `⚡ ${deliverySettings.deliveryTimeText || '15 Mins'} Delivery`}
                 </div>
                 <div style={{
                   fontSize: '0.85rem',
@@ -286,9 +301,31 @@ const Navbar = () => {
           </div>
 
           {/* Actions */}
-          <div className="flex" style={{ gap: '1rem' }}>
-            {/* Cart Icon */}
-            {user && !isAdmin && (
+          <div className="flex" style={{ gap: '0.8rem', alignItems: 'center' }}>
+            
+            {/* Wishlist Icon */}
+            {!isAdmin && (
+              <a 
+                href="/#products-section" 
+                title="View Favorites & Products"
+                style={{
+                  position: 'relative',
+                  padding: '10px',
+                  background: '#f8fafc',
+                  borderRadius: '12px',
+                  color: '#64748b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1px solid #f1f5f9'
+                }}
+              >
+                <Heart size={19} />
+              </a>
+            )}
+
+            {/* Cart Icon (Visible to all non-admin shoppers) */}
+            {!isAdmin && (
               <div onClick={openCart} style={{ cursor: 'pointer' }}>
                 <motion.div
                   variants={navItemVariants}
@@ -296,21 +333,22 @@ const Navbar = () => {
                   whileTap="tap"
                   style={{
                     position: 'relative',
-                    padding: '10px',
-                    background: '#f1f5f9',
+                    padding: '10px 14px',
+                    background: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
                     borderRadius: '12px',
-                    color: 'var(--dark)'
+                    color: '#16a34a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
                   }}
                 >
-                  <ShoppingCart size={20} />
+                  <ShoppingCart size={19} />
                   {cart.length > 0 && (
                     <span style={{
-                      position: 'absolute', top: '-4px', right: '-4px',
-                      minWidth: '18px', height: '18px',
-                      background: 'var(--primary)', color: 'white',
-                      fontSize: '0.65rem', borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      border: '2px solid white', fontWeight: '800'
+                      fontWeight: '800',
+                      fontSize: '0.82rem',
+                      color: '#15803d'
                     }}>
                       {cart.length}
                     </span>

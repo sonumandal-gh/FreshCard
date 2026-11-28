@@ -4,13 +4,32 @@ import {
   ShoppingCart, Heart, Package, Star, ArrowRight, TrendingUp, 
   ShieldCheck, Zap, MapPin, Navigation, Check, Search, X, 
   Plus, Minus, Clock, Eye, Sparkles, SlidersHorizontal, CheckCircle2,
-  Truck, Leaf, RotateCcw
+  Truck, Leaf, RotateCcw, Award, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { productAPI, categoryAPI } from '../api/api';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { getImageUrl, DEFAULT_FALLBACK_IMAGE, getProductFallbackImage } from '../utils/imageUtils';
+import Hero3DCanvas from '../components/Hero3DCanvas';
+import ProductCard from '../components/ProductCard';
+import { getDeliverySettings } from '../utils/settingsUtils';
+
+const CATEGORY_ICONS = {
+  'All': '🛒',
+  'Vegetables': '🥬',
+  'Fruits': '🍎',
+  'Fruits & Vegetables': '🥑',
+  'Dairy': '🥛',
+  'Dairy & Bakery': '🧀',
+  'Bakery': '🍞',
+  'Snacks': '🍿',
+  'Snacks & Beverages': '🍪',
+  'Beverages': '🧃',
+  'Rice, Atta & Pulses': '🌾',
+  'Personal Care': '🧴',
+  'Household Essentials': '🧼'
+};
 
 const Home = () => {
   const [products, setProducts] = useState([]);
@@ -19,8 +38,22 @@ const Home = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [deliveryLocation, setDeliveryLocation] = useState('Select Location');
   const [detectingGps, setDetectingGps] = useState(false);
+  const [deliverySettings, setDeliverySettings] = useState(getDeliverySettings());
+
+  useEffect(() => {
+    const handleSettingsUpdate = (e) => {
+      if (e.detail) setDeliverySettings(e.detail);
+      else setDeliverySettings(getDeliverySettings());
+    };
+    window.addEventListener('freshcart_settings_updated', handleSettingsUpdate);
+    window.addEventListener('storage', handleSettingsUpdate);
+    return () => {
+      window.removeEventListener('freshcart_settings_updated', handleSettingsUpdate);
+      window.removeEventListener('storage', handleSettingsUpdate);
+    };
+  }, []);
   
-  // Interactive features: Search, Filter, Sort, Wishlist & Modals
+  // Interactive controls
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('featured');
   const [onlyInStock, setOnlyInStock] = useState(false);
@@ -37,7 +70,7 @@ const Home = () => {
     }
   });
 
-  const { cart, addToCart, updateQuantity } = useCart();
+  const { cart, addToCart, updateQuantity, openCart } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -97,49 +130,6 @@ const Home = () => {
     };
   }, [user]);
 
-  const handleQuickGpsDetect = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser.");
-      return;
-    }
-    setDetectingGps(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          const data = await res.json();
-          const addr = data.address || {};
-          const city = addr.city || addr.town || addr.village || addr.suburb || 'My Location';
-          const pincode = addr.postcode || '';
-
-          const locText = `${city}${pincode ? ` (${pincode})` : ''}`;
-          setDeliveryLocation(locText);
-
-          const existing = JSON.parse(localStorage.getItem('freshcart_delivery_address') || '{}');
-          localStorage.setItem('freshcart_delivery_address', JSON.stringify({
-            ...existing,
-            city,
-            pincode,
-            lat: latitude,
-            lng: longitude
-          }));
-
-          window.dispatchEvent(new Event('freshcart_address_updated'));
-        } catch (err) {
-          setDeliveryLocation(`Location (${latitude.toFixed(2)}, ${longitude.toFixed(2)})`);
-        } finally {
-          setDetectingGps(false);
-        }
-      },
-      () => {
-        setDetectingGps(false);
-        alert("Could not detect location. Please set location in Navbar.");
-      },
-      { timeout: 8000 }
-    );
-  };
-
   // Redirect admin to dashboard
   useEffect(() => {
     if (user?.role === 'admin') {
@@ -147,6 +137,7 @@ const Home = () => {
     }
   }, [user, navigate]);
 
+  // Fetch products and categories
   useEffect(() => {
     productAPI.getAll()
       .then(res => {
@@ -161,1330 +152,826 @@ const Home = () => {
     categoryAPI.getAll()
       .then(res => {
         if (res.data.success && res.data.categories) {
-          setCategories(['All', ...res.data.categories.map(c => c.name)]);
+          const catNames = ['All', ...res.data.categories.map(c => c.name)];
+          setCategories(catNames);
         }
       })
-      .catch(err => {
-        console.error("Error fetching categories:", err);
-      });
+      .catch(err => console.error(err));
   }, []);
 
-  // Filter & sort logic
+  // Filtered and Sorted Products
   const filteredProducts = useMemo(() => {
-    let result = [...products];
-
-    // Filter by Category
-    if (activeCategory !== 'All') {
-      result = result.filter(p => p.category?.toLowerCase() === activeCategory.toLowerCase());
-    }
-
-    // Filter by Search
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter(p => 
-        (p.name && p.name.toLowerCase().includes(q)) ||
-        (p.category && p.category.toLowerCase().includes(q)) ||
-        (p.description && p.description.toLowerCase().includes(q))
-      );
-    }
-
-    // Filter by Stock
-    if (onlyInStock) {
-      result = result.filter(p => p.stock > 0);
-    }
-
-    // Sort
-    if (sortBy === 'price-low') {
-      result.sort((a, b) => a.price - b.price);
-    } else if (sortBy === 'price-high') {
-      result.sort((a, b) => b.price - a.price);
-    } else if (sortBy === 'name') {
-      result.sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return result;
+    return products
+      .filter(p => {
+        const matchesCat = activeCategory === 'All' || p.category?.toLowerCase() === activeCategory.toLowerCase();
+        const matchesSearch = !searchQuery || 
+          p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+          (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchesStock = !onlyInStock || (p.stock === undefined || p.stock > 0);
+        return matchesCat && matchesSearch && matchesStock;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'price-low') return (a.price || 0) - (b.price || 0);
+        if (sortBy === 'price-high') return (b.price || 0) - (a.price || 0);
+        if (sortBy === 'name') return a.name.localeCompare(b.name);
+        return 0; // featured default
+      });
   }, [products, activeCategory, searchQuery, onlyInStock, sortBy]);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.07 }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] } }
-  };
-
   return (
-    <div className="home-page" style={{ 
-      paddingTop: '5rem',
-      paddingBottom: '5rem', 
-      background: 'radial-gradient(1200px 600px at 85% 10%, rgba(209, 250, 229, 0.55), transparent 60%), radial-gradient(800px 500px at 0% 100%, rgba(220, 252, 231, 0.45), transparent 60%), #f8fbf9', 
-      minHeight: '100vh', 
-      color: '#0f291e' 
-    }}>
-      {/* Hero Section */}
-      <section className="hero" style={{ 
-        position: 'relative',
-        padding: 'clamp(2.5rem, 6vw, 4.5rem) 0 clamp(2.5rem, 5vw, 4rem)', 
-        overflow: 'hidden'
-      }}>
-        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-            alignItems: 'center',
-            gap: 'clamp(2.5rem, 5vw, 4.5rem)'
-          }}>
-            {/* Left Column: Text, Search, CTAs & Stats */}
-            <motion.div 
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6 }}
-              style={{ textAlign: 'left' }}
-            >
-              {/* Top Eyebrow Badge */}
-              <motion.span 
-                whileHover={{ scale: 1.05 }}
+    <div style={{ position: 'relative', overflowX: 'hidden' }}>
+      
+      {/* 1. CINEMATIC 3D HERO SECTION */}
+      <section 
+        style={{ 
+          position: 'relative', 
+          minHeight: '88vh', 
+          display: 'flex', 
+          alignItems: 'center', 
+          background: 'linear-gradient(180deg, #f8fbf9 0%, #f0fdf4 50%, #ffffff 100%)',
+          padding: '6rem 0 4rem',
+          overflow: 'hidden'
+        }}
+      >
+        {/* Procedural 3D Canvas Wave / Particle Background */}
+        <Hero3DCanvas />
+
+        <div className="container" style={{ position: 'relative', zIndex: 1, width: '100%' }}>
+          <div 
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', 
+              gap: '3.5rem', 
+              alignItems: 'center' 
+            }}
+          >
+            {/* Left Column: Editorial Headline & Actions */}
+            <div>
+              {/* Delivery Status Pill */}
+              <motion.div 
+                initial={{ opacity: 0, y: -15 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
                 style={{ 
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: '#ecfdf5',
-                  border: '1px solid #a7f3d0',
-                  color: '#15803d',
-                  padding: '0.45rem 1.3rem',
-                  borderRadius: '999px',
-                  fontWeight: '800',
-                  fontSize: '0.82rem',
-                  marginBottom: '1.2rem',
-                  boxShadow: '0 4px 12px rgba(22, 101, 52, 0.08)'
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  background: 'rgba(255, 255, 255, 0.95)', 
+                  padding: '8px 16px', 
+                  borderRadius: '30px', 
+                  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+                  border: '1px solid rgba(22, 163, 74, 0.15)',
+                  marginBottom: '1.8rem'
                 }}
               >
-                <Sparkles size={14} color="#16a34a" /> ⚡ 15-Minute Express Delivery on All Orders
-              </motion.span>
-              
-              {/* Headline */}
-              <h1 style={{ 
-                fontSize: 'clamp(2.5rem, 5.5vw, 4rem)', 
-                fontWeight: '900', 
-                lineHeight: 1.08,
-                marginBottom: '1.2rem',
-                letterSpacing: '-0.035em',
-                color: '#0f291e'
-              }}>
-                Fresh groceries,<br />
-                <span style={{ 
-                  background: 'linear-gradient(135deg, #15803d 0%, #16a34a 60%, #22c55e 100%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  display: 'inline-block'
-                }}>
-                  delivered
-                </span> in minutes.
-              </h1>
-              
-              <p style={{ 
-                fontSize: '1.12rem', 
-                marginBottom: '2rem', 
-                maxWidth: '520px', 
-                fontWeight: '400', 
-                color: '#475569',
-                lineHeight: 1.6
-              }}>
-                Farm-picked fruits, crisp vegetables, warm bread, and daily essentials — handpicked and at your door before the kettle boils.
-              </p>
+                <span className="pulse-glow" style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a' }} />
+                <span style={{ fontSize: '0.85rem', fontWeight: '800', color: '#15803d', letterSpacing: '0.02em' }}>
+                  ⚡ {deliverySettings.deliveryTimeText || '15-Minute'} Express Delivery to Your Door
+                </span>
+              </motion.div>
 
-              {/* FreshMart Style Interactive Search Bar */}
-              <div style={{ maxWidth: '540px', marginBottom: '1.8rem', position: 'relative' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  background: '#ffffff',
-                  border: '2px solid #bbf7d0',
-                  borderRadius: '999px',
-                  padding: '0.45rem 0.6rem 0.45rem 1.3rem',
-                  boxShadow: '0 12px 32px -8px rgba(22, 101, 52, 0.12)',
-                  transition: 'border-color 0.2s ease'
-                }}>
-                  <Search size={22} style={{ color: '#16a34a', marginRight: '10px', flexShrink: 0 }} />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search fresh milk, potatoes, apples, bread..."
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      outline: 'none',
-                      boxShadow: 'none',
-                      color: '#0f291e',
-                      fontSize: '0.98rem',
-                      fontWeight: '600',
-                      width: '100%',
-                      padding: '0.45rem 0'
-                    }}
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      style={{
-                        background: '#f1f5f9',
-                        border: 'none',
-                        borderRadius: '50%',
-                        width: '30px',
-                        height: '30px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#64748b',
-                        marginRight: '8px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <X size={15} />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById('products-grid')?.scrollIntoView({ behavior: 'smooth' })}
-                    style={{
-                      background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                      color: 'white',
-                      border: 'none',
-                      padding: '0.75rem 1.5rem',
-                      borderRadius: '999px',
-                      fontWeight: '800',
-                      fontSize: '0.92rem',
-                      cursor: 'pointer',
-                      boxShadow: '0 6px 16px -2px rgba(22, 163, 74, 0.35)',
-                      flexShrink: 0
-                    }}
-                  >
-                    Search
-                  </button>
-                </div>
+              {/* Main Headline */}
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                style={{ 
+                  fontSize: 'clamp(2.5rem, 5vw, 4.2rem)', 
+                  fontWeight: '900', 
+                  letterSpacing: '-0.035em', 
+                  lineHeight: '1.08',
+                  color: '#0f172a',
+                  marginBottom: '1.4rem'
+                }}
+              >
+                Freshness Delivered. <br />
+                <span className="text-gradient">Happiness Unpacked.</span>
+              </motion.h1>
 
-                {/* Popular Search Pills */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '8px',
-                  marginTop: '0.9rem',
-                  fontSize: '0.8rem',
-                  color: '#64748b'
-                }}>
-                  <span style={{ fontWeight: '700', color: '#1e293b' }}>Popular:</span>
-                  {['Milk', 'Potato', 'Apple', 'Tomato', 'Curd', 'Snacks'].map(tag => (
-                    <button
-                      key={tag}
-                      onClick={() => {
-                        setSearchQuery(tag);
-                        document.getElementById('products-grid')?.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      style={{
-                        background: '#ffffff',
-                        border: '1px solid #e2ece5',
-                        borderRadius: '999px',
-                        padding: '0.22rem 0.75rem',
-                        color: '#15803d',
-                        fontSize: '0.78rem',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = '#16a34a';
-                        e.currentTarget.style.background = '#ecfdf5';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = '#e2ece5';
-                        e.currentTarget.style.background = '#ffffff';
-                      }}
-                    >
-                      {tag}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Action Buttons */}
-              <div className="flex hero-buttons" style={{ gap: '1rem', marginBottom: '2.2rem' }}>
-                <motion.button 
-                  whileHover={{ scale: 1.05, boxShadow: '0 15px 30px -5px rgba(22, 163, 74, 0.4)' }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => document.getElementById('products-grid')?.scrollIntoView({ behavior: 'smooth' })}
-                  style={{ 
-                    height: '52px', 
-                    padding: '0 2rem', 
-                    fontSize: '0.98rem', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '8px',
-                    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                    color: 'white',
-                    borderRadius: '16px',
-                    fontWeight: '800',
-                    boxShadow: '0 10px 24px -4px rgba(22, 163, 74, 0.35)',
-                    border: 'none',
-                    cursor: 'pointer'
-                  }}
+              {/* Supporting Subtext */}
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                style={{ 
+                  fontSize: 'clamp(1rem, 1.8vw, 1.2rem)', 
+                  color: '#475569', 
+                  fontWeight: '500', 
+                  lineHeight: '1.6', 
+                  maxWidth: '540px',
+                  marginBottom: '2.5rem'
+                }}
+              >
+                Discover crisp farm produce, wholesome dairy, pantry staples, and everyday groceries hand-selected and delivered before your tea cools.
+              </motion.p>
+
+              {/* Call to Actions */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="flex" 
+                style={{ gap: '1rem', flexWrap: 'wrap', marginBottom: '2.5rem' }}
+              >
+                <a 
+                  href="#products-section" 
+                  className="btn-primary"
+                  style={{ padding: '1rem 2rem', fontSize: '1.02rem', borderRadius: '16px' }}
                 >
-                  Shop Now <ArrowRight size={18} />
-                </motion.button>
-                
-                <motion.button 
-                  whileHover={{ scale: 1.05, background: '#f0fdf4' }}
-                  whileTap={{ scale: 0.95 }}
+                  Start Shopping <ArrowRight size={18} />
+                </a>
+
+                <button 
                   onClick={() => setIsHowItWorksOpen(true)}
-                  style={{ 
-                    height: '52px', 
-                    padding: '0 1.8rem', 
-                    background: '#ffffff', 
-                    color: '#15803d', 
-                    border: '1.5px solid #bbf7d0', 
-                    borderRadius: '16px', 
-                    fontWeight: '800', 
-                    fontSize: '0.95rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
-                    transition: 'all 0.2s ease'
-                  }}
+                  className="btn-secondary"
+                  style={{ padding: '1rem 2rem', fontSize: '1.02rem', borderRadius: '16px' }}
                 >
                   How It Works
-                </motion.button>
-              </div>
+                </button>
+              </motion.div>
 
-              {/* Hero Quick Stats Strip */}
-              <div style={{ 
-                display: 'flex', 
-                flexWrap: 'wrap',
-                gap: '1.8rem', 
-                color: '#334155', 
-                fontSize: '0.8rem', 
-                fontWeight: '800', 
-                letterSpacing: '0.04em', 
-                textTransform: 'uppercase'
-              }}>
-                 <div className="flex" style={{ gap: '6px' }}><TrendingUp size={16} color="#16a34a" /> 15-30 Min Delivery</div>
-                 <div className="flex" style={{ gap: '6px' }}><ShieldCheck size={16} color="#16a34a" /> 100% Farm Fresh</div>
-                 <div className="flex" style={{ gap: '6px' }}><Zap size={16} color="#16a34a" /> Best Quality Guarantee</div>
-              </div>
-            </motion.div>
-
-            {/* Right Column: Big Beautiful Hero Image with Floating Badges */}
-            <motion.div 
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              style={{ position: 'relative' }}
-            >
-              {/* Main Image Container */}
-              <div style={{
-                position: 'relative',
-                borderRadius: '2.5rem',
-                overflow: 'hidden',
-                height: 'clamp(380px, 42vw, 500px)',
-                boxShadow: '0 25px 60px -15px rgba(22, 101, 52, 0.22), 0 0 0 1px rgba(22, 101, 52, 0.06)',
-                background: '#f0fdf4'
-              }}>
-                <img 
-                  src="https://freshmart-marketplace.lovable.app/assets/hero-groceries-fdZkXQNg.jpg"
-                  alt="Fresh groceries basket"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=1000&auto=format&fit=crop&q=80";
-                  }}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    display: 'block'
+              {/* Live Search Input */}
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                style={{ 
+                  background: 'white', 
+                  borderRadius: '18px', 
+                  padding: '6px 8px 6px 18px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  boxShadow: '0 12px 36px rgba(0, 0, 0, 0.08)',
+                  border: '1px solid rgba(0, 0, 0, 0.06)',
+                  maxWidth: '540px'
+                }}
+              >
+                <Search size={20} color="#16a34a" style={{ flexShrink: 0, marginRight: '10px' }} />
+                <input 
+                  type="text" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search fresh milk, potatoes, apples, curd, bread..."
+                  style={{ 
+                    border: 'none', 
+                    background: 'transparent', 
+                    padding: '0.6rem 0', 
+                    fontSize: '0.98rem',
+                    boxShadow: 'none',
+                    fontWeight: '500'
                   }}
                 />
-                {/* Subtle soft gradient overlay */}
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'linear-gradient(180deg, rgba(0,0,0,0) 60%, rgba(15,41,30,0.3) 100%)',
-                  pointerEvents: 'none'
-                }} />
+                {searchQuery ? (
+                  <button 
+                    onClick={() => setSearchQuery('')}
+                    style={{ background: '#f1f5f9', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}
+                  >
+                    <X size={16} />
+                  </button>
+                ) : (
+                  <a 
+                    href="#products-section" 
+                    className="btn-primary" 
+                    style={{ padding: '0.65rem 1.4rem', borderRadius: '12px', fontSize: '0.9rem' }}
+                  >
+                    Search
+                  </a>
+                )}
+              </motion.div>
+
+              {/* Popular Search Chips */}
+              <div className="flex" style={{ gap: '8px', marginTop: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748b' }}>Popular:</span>
+                {['Milk', 'Potato', 'Apple', 'Tomato', 'Curd', 'Snacks'].map((tag) => (
+                  <button
+                    key={tag}
+                    onClick={() => setSearchQuery(tag)}
+                    style={{
+                      background: searchQuery === tag ? '#16a34a' : 'rgba(255, 255, 255, 0.8)',
+                      color: searchQuery === tag ? 'white' : '#475569',
+                      border: '1px solid rgba(0, 0, 0, 0.06)',
+                      borderRadius: '20px',
+                      padding: '4px 12px',
+                      fontSize: '0.78rem',
+                      fontWeight: '700',
+                      boxShadow: '0 2px 6px rgba(0, 0, 0, 0.03)'
+                    }}
+                  >
+                    {tag}
+                  </button>
+                ))}
               </div>
+            </div>
 
-              {/* Floating Badge 1: Top Left */}
-              <motion.div 
-                animate={{ y: [0, -6, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                style={{
-                  position: 'absolute',
-                  top: '-15px',
-                  left: '-15px',
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(16px)',
-                  padding: '10px 16px',
-                  borderRadius: '1.2rem',
-                  boxShadow: '0 15px 35px -5px rgba(22, 48, 36, 0.15)',
-                  border: '1px solid #bbf7d0',
+            {/* Right Column: 3D Cinematic Grocery Showcase Composition */}
+            <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
+              <div 
+                className="perspective-container" 
+                style={{ 
+                  position: 'relative', 
+                  width: '100%', 
+                  maxWidth: '520px', 
+                  minHeight: '440px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '12px',
-                  zIndex: 3
+                  justifyContent: 'center'
                 }}
               >
-                <div style={{
-                  background: '#ecfdf5',
-                  color: '#16a34a',
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '1.2rem'
-                }}>
-                  🍓
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.86rem', fontWeight: '800', color: '#0f291e' }}>Fresh Harvest</div>
-                  <div style={{ fontSize: '0.74rem', fontWeight: '700', color: '#16a34a' }}>100% Organically Grown</div>
-                </div>
-              </motion.div>
+                {/* Glowing Ambient Backdrop Aura */}
+                <div 
+                  style={{ 
+                    position: 'absolute', 
+                    width: '380px', 
+                    height: '380px', 
+                    borderRadius: '50%', 
+                    background: 'radial-gradient(circle, rgba(22, 163, 74, 0.18) 0%, rgba(245, 158, 11, 0.12) 50%, transparent 70%)',
+                    filter: 'blur(35px)',
+                    zIndex: 0
+                  }}
+                />
 
-              {/* Floating Badge 2: Bottom Right */}
-              <motion.div 
-                animate={{ y: [0, 6, 0] }}
-                transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
-                style={{
-                  position: 'absolute',
-                  bottom: '-15px',
-                  right: '-10px',
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  backdropFilter: 'blur(16px)',
-                  padding: '12px 18px',
-                  borderRadius: '1.4rem',
-                  boxShadow: '0 20px 40px -10px rgba(22, 48, 36, 0.18)',
-                  border: '1px solid #bbf7d0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                  zIndex: 3
-                }}
-              >
-                <div style={{
-                  background: 'linear-gradient(135deg, #16a34a, #15803d)',
-                  color: 'white',
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 6px 14px -2px rgba(22, 163, 74, 0.4)'
-                }}>
-                  <Zap size={20} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '0.88rem', fontWeight: '900', color: '#0f291e' }}>⚡ 15-Minute Drop</div>
-                  <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: '600' }}>Packed cold & fresh</div>
-                </div>
-              </motion.div>
+                {/* Central 3D Grocery Basket Card */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9, rotateY: 10 }}
+                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                  transition={{ duration: 0.8, ease: 'easeOut' }}
+                  style={{
+                    position: 'relative',
+                    zIndex: 2,
+                    background: 'rgba(255, 255, 255, 0.92)',
+                    backdropFilter: 'blur(16px)',
+                    border: '1px solid rgba(255, 255, 255, 0.8)',
+                    borderRadius: '32px',
+                    padding: '2rem',
+                    boxShadow: '0 30px 60px -15px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(22, 163, 74, 0.1)',
+                    width: '100%',
+                    maxWidth: '420px',
+                    textAlign: 'center'
+                  }}
+                >
+                  {/* Hero Visual Imagery */}
+                  <div style={{ position: 'relative', width: '100%', height: '230px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img 
+                      src="https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&auto=format&fit=crop&q=80" 
+                      alt="Farm Fresh Produce" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover', 
+                        borderRadius: '22px',
+                        boxShadow: '0 12px 28px -6px rgba(0, 0, 0, 0.15)'
+                      }} 
+                    />
+                    {/* Live delivery indicator */}
+                    <div 
+                      style={{ 
+                        position: 'absolute', 
+                        bottom: '12px', 
+                        left: '12px', 
+                        background: 'rgba(15, 23, 42, 0.85)', 
+                        backdropFilter: 'blur(8px)',
+                        color: 'white', 
+                        borderRadius: '20px', 
+                        padding: '6px 14px', 
+                        fontSize: '0.8rem', 
+                        fontWeight: '700',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Zap size={14} fill="#f59e0b" color="#f59e0b" /> In Delivery: 12 Mins
+                    </div>
+                  </div>
 
-              {/* Floating Badge 3: Center Left Rating Pill */}
-              <motion.div 
-                animate={{ x: [0, -4, 0] }}
-                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-                style={{
-                  position: 'absolute',
-                  bottom: '80px',
-                  left: '-20px',
-                  background: '#ffffff',
-                  padding: '8px 14px',
-                  borderRadius: '999px',
-                  boxShadow: '0 12px 30px -5px rgba(0, 0, 0, 0.12)',
-                  border: '1px solid #e2ece5',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  zIndex: 3
-                }}
-              >
-                <Star size={16} fill="#f59e0b" stroke="none" />
-                <span style={{ fontSize: '0.82rem', fontWeight: '800', color: '#0f291e' }}>4.9/5</span>
-                <span style={{ fontSize: '0.76rem', color: '#64748b' }}>• 12k+ Orders</span>
-              </motion.div>
-            </motion.div>
+                  <div style={{ marginTop: '1.25rem', textAlign: 'left' }}>
+                    <div className="flex-between">
+                      <div>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#0f172a', letterSpacing: '-0.02em' }}>
+                          Farm Harvest Box
+                        </h3>
+                        <p style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: '600' }}>
+                          12 Handpicked Organics • Freshly Harvested
+                        </p>
+                      </div>
+                      <span style={{ fontSize: '1.3rem', fontWeight: '900', color: '#16a34a' }}>
+                        ₹299
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Floating Micro-Badge 1: Top Right */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.8, delay: 0.3 }}
+                  className="floating-element"
+                  style={{
+                    position: 'absolute',
+                    top: '-15px',
+                    right: '-10px',
+                    zIndex: 3,
+                    background: 'white',
+                    borderRadius: '16px',
+                    padding: '10px 16px',
+                    boxShadow: '0 15px 35px rgba(0, 0, 0, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    border: '1px solid rgba(245, 158, 11, 0.2)'
+                  }}
+                >
+                  <div style={{ background: '#fef3c7', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706' }}>
+                    <Star size={18} fill="#d97706" />
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: '900', color: '#0f172a' }}>4.9 ★ Rating</p>
+                    <p style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600' }}>25,000+ Happy Foodies</p>
+                  </div>
+                </motion.div>
+
+                {/* Floating Micro-Badge 2: Bottom Left */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.8, delay: 0.4 }}
+                  className="floating-element-reverse"
+                  style={{
+                    position: 'absolute',
+                    bottom: '-20px',
+                    left: '-15px',
+                    zIndex: 3,
+                    background: 'white',
+                    borderRadius: '16px',
+                    padding: '10px 16px',
+                    boxShadow: '0 15px 35px rgba(0, 0, 0, 0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    border: '1px solid rgba(22, 163, 74, 0.2)'
+                  }}
+                >
+                  <div style={{ background: '#dcfce7', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#16a34a' }}>
+                    <Leaf size={18} />
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <p style={{ fontSize: '0.85rem', fontWeight: '900', color: '#0f172a' }}>100% Farm Fresh</p>
+                    <p style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600' }}>Direct Organic Growers</p>
+                  </div>
+                </motion.div>
+
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Main Content Area */}
-      <section id="products-grid" className="container" style={{ position: 'relative', zIndex: 10 }}>
-        {/* Prominent Quick-Delivery Location Bar */}
-        <motion.div 
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          style={{
-            background: '#ffffff',
-            border: '1px solid #e2ece5',
-            borderRadius: '1.5rem',
-            padding: '1.2rem 1.8rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '1rem',
-            marginBottom: '2.5rem',
-            boxShadow: '0 8px 24px -6px rgba(22, 48, 36, 0.06)'
-          }}
-        >
-          <div className="flex" style={{ gap: '14px', alignItems: 'center' }}>
-            <div style={{ 
-              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', 
-              color: 'white', 
-              padding: '12px', 
-              borderRadius: '14px', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              boxShadow: '0 6px 16px -2px rgba(22, 163, 74, 0.35)' 
-            }}>
-              <MapPin size={24} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.74rem', color: '#15803d', fontWeight: '800', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                ⚡ Delivering in 15 Minutes To:
-              </div>
-              <div style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0f291e', marginTop: '2px' }}>
-                {deliveryLocation}
-              </div>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleQuickGpsDetect}
-            disabled={detectingGps}
-            style={{
-              padding: '0.75rem 1.5rem',
-              borderRadius: '12px',
-              background: '#ecfdf5',
-              border: '1.5px solid #16a34a',
-              color: '#15803d',
-              fontWeight: '800',
-              fontSize: '0.9rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: detectingGps ? 'not-allowed' : 'pointer',
-              transition: 'all 0.2s ease',
-              boxShadow: '0 4px 12px rgba(22, 101, 52, 0.08)'
-            }}
-          >
-            <Navigation size={18} className={detectingGps ? 'animate-spin' : ''} />
-            {detectingGps ? 'Detecting GPS...' : 'Detect GPS Location'}
-          </button>
-        </motion.div>
-
-        {/* Category Navigation Bar */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <div style={{ marginBottom: '1.2rem', textAlign: 'center' }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Shop by Category
-            </span>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0f291e', letterSpacing: '-0.02em', marginTop: '2px' }}>
-              Explore Our Fresh Picks
-            </h2>
-          </div>
-
+      {/* 2. VALUE PROPOSITION STRIP */}
+      <section style={{ background: '#ffffff', borderTop: '1px solid #f1f5f9', borderBottom: '1px solid #f1f5f9', padding: '1.8rem 0' }}>
+        <div className="container">
           <div 
-            className="scroll-x category-bar"
             style={{ 
-              background: '#ffffff', 
-              padding: '0.8rem 1rem', 
-              borderRadius: '1.8rem', 
-              boxShadow: '0 8px 24px -6px rgba(22, 48, 36, 0.05)',
-              border: '1px solid #e2ece5',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '0.8rem'
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', 
+              gap: '1.5rem',
+              alignItems: 'center'
             }}
           >
-            {categories.map(cat => {
+            {[
+              { icon: <Zap size={22} color="#16a34a" />, title: "15-30 Min Fast Delivery", desc: "Express delivery to your doorstep" },
+              { icon: <Leaf size={22} color="#16a34a" />, title: "100% Farm Direct", desc: "No middleman, freshest quality" },
+              { icon: <ShieldCheck size={22} color="#16a34a" />, title: "Best Quality Guarantee", desc: "Strict 4-stage quality check" },
+              { icon: <RotateCcw size={22} color="#16a34a" />, title: "Instant Easy Returns", desc: "No questions asked doorstep refund" }
+            ].map((feature, idx) => (
+              <div key={idx} className="flex" style={{ gap: '14px' }}>
+                <div style={{ background: '#f0fdf4', padding: '12px', borderRadius: '14px', flexShrink: 0 }}>
+                  {feature.icon}
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '0.92rem', fontWeight: '800', color: '#0f172a' }}>{feature.title}</h4>
+                  <p style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '500' }}>{feature.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 3. CATEGORIES SECTION */}
+      <section id="categories-section" style={{ padding: '4rem 0 2rem' }}>
+        <div className="container">
+          <div className="flex-between" style={{ marginBottom: '2rem' }}>
+            <div>
+              <span style={{ fontSize: '0.8rem', fontWeight: '800', textTransform: 'uppercase', color: '#16a34a', letterSpacing: '0.05em' }}>
+                Browse Departments
+              </span>
+              <h2 style={{ fontSize: '2.2rem', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.03em' }}>
+                Explore by Category
+              </h2>
+            </div>
+            <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '600' }}>
+              {categories.length - 1} Departments Available
+            </span>
+          </div>
+
+          {/* Horizontal Category Slider with Icons */}
+          <div 
+            className="scroll-x" 
+            style={{ 
+              display: 'flex', 
+              gap: '1rem', 
+              paddingBottom: '1rem',
+              overflowX: 'auto',
+              scrollbarWidth: 'none'
+            }}
+          >
+            {categories.map((cat) => {
               const isActive = activeCategory === cat;
-              const count = cat === 'All' 
-                ? products.length 
-                : products.filter(p => p.category?.toLowerCase() === cat.toLowerCase()).length;
+              const icon = CATEGORY_ICONS[cat] || '🥗';
 
               return (
-                <motion.button
+                <button
                   key={cat}
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.96 }}
                   onClick={() => setActiveCategory(cat)}
                   style={{
-                    padding: '0.75rem 1.8rem',
-                    borderRadius: '1.2rem',
-                    fontSize: '0.92rem',
+                    background: isActive ? '#16a34a' : 'white',
+                    color: isActive ? 'white' : '#0f172a',
+                    padding: '0.85rem 1.6rem',
+                    borderRadius: '16px',
+                    border: `1.5px solid ${isActive ? '#16a34a' : 'rgba(0, 0, 0, 0.06)'}`,
+                    boxShadow: isActive ? '0 10px 25px rgba(22, 163, 74, 0.3)' : '0 2px 8px rgba(0, 0, 0, 0.03)',
                     fontWeight: '800',
-                    background: isActive 
-                      ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' 
-                      : '#f8faf9',
-                    color: isActive ? '#ffffff' : '#334155',
-                    boxShadow: isActive ? '0 8px 18px -3px rgba(22, 163, 74, 0.4)' : 'none',
-                    border: isActive ? 'none' : '1px solid #e2ece5',
-                    transition: 'all 0.2s ease',
-                    cursor: 'pointer',
+                    fontSize: '0.92rem',
+                    whiteSpace: 'nowrap',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px',
-                    whiteSpace: 'nowrap'
+                    gap: '10px',
+                    transition: 'all 0.25s ease'
                   }}
                 >
+                  <span style={{ fontSize: '1.2rem' }}>{icon}</span>
                   <span>{cat}</span>
-                  <span style={{
-                    fontSize: '0.72rem',
-                    padding: '2px 7px',
-                    borderRadius: '10px',
-                    background: isActive ? 'rgba(0, 0, 0, 0.25)' : '#e2ece5',
-                    color: isActive ? '#ffffff' : '#475569',
-                    fontWeight: '800'
-                  }}>
-                    {count}
-                  </span>
-                </motion.button>
+                </button>
               );
             })}
           </div>
         </div>
+      </section>
 
-        {/* Toolbar: Result Info, Sort & In-Stock Filter */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          marginBottom: '2rem',
-          paddingBottom: '0.8rem',
-          borderBottom: '1px solid #e2ece5'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span style={{ fontSize: '1.1rem', fontWeight: '800', color: '#0f291e' }}>
-              {filteredProducts.length} {filteredProducts.length === 1 ? 'Product' : 'Products'} Available
-            </span>
-            {searchQuery && (
-              <span style={{
-                fontSize: '0.82rem',
-                background: '#ecfdf5',
-                color: '#15803d',
-                padding: '3px 10px',
-                borderRadius: '8px',
-                fontWeight: '700',
-                border: '1px solid #a7f3d0'
-              }}>
-                matching "{searchQuery}"
-              </span>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {/* Quick In-stock filter */}
-            <button
-              onClick={() => setOnlyInStock(!onlyInStock)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '0.45rem 0.9rem',
-                borderRadius: '10px',
-                fontSize: '0.82rem',
-                fontWeight: '800',
-                background: onlyInStock ? '#ecfdf5' : '#ffffff',
-                border: onlyInStock ? '1.5px solid #16a34a' : '1px solid #cbd5e1',
-                color: onlyInStock ? '#15803d' : '#475569',
-                cursor: 'pointer',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-              }}
-            >
-              <CheckCircle2 size={15} color={onlyInStock ? '#16a34a' : '#94a3b8'} />
-              In Stock Only
-            </button>
-
-            {/* Sort Select */}
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              style={{
-                width: 'auto',
-                padding: '0.45rem 1.6rem 0.45rem 0.9rem',
-                borderRadius: '10px',
-                background: '#ffffff',
-                border: '1px solid #cbd5e1',
-                color: '#0f291e',
-                fontSize: '0.85rem',
-                fontWeight: '700',
-                cursor: 'pointer',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-              }}
-            >
-              <option value="featured">Sort: Featured</option>
-              <option value="price-low">Price: Low to High</option>
-              <option value="price-high">Price: High to Low</option>
-              <option value="name">Name: A to Z</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Product Grid */}
-        <AnimatePresence mode="wait">
-          {loading ? (
-            <div 
-              key="loader"
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-                gap: '2rem'
-              }}
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                <div 
-                  key={i} 
-                  style={{
-                    background: '#ffffff',
-                    border: '1px solid #e2ece5',
-                    borderRadius: '1.4rem',
-                    padding: '1.2rem',
-                    height: '380px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    boxShadow: '0 4px 16px rgba(0,0,0,0.03)'
-                  }}
-                >
-                  <div style={{ width: '100%', height: '180px', background: '#f1f5f9', borderRadius: '1rem' }} />
-                  <div>
-                    <div style={{ width: '40%', height: '14px', background: '#f1f5f9', borderRadius: '4px', marginBottom: '8px' }} />
-                    <div style={{ width: '80%', height: '22px', background: '#f1f5f9', borderRadius: '4px', marginBottom: '12px' }} />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ width: '35%', height: '24px', background: '#f1f5f9', borderRadius: '6px' }} />
-                    <div style={{ width: '40%', height: '36px', background: '#f1f5f9', borderRadius: '12px' }} />
-                  </div>
-                </div>
-              ))}
+      {/* 4. PRODUCTS SHOWCASE SECTION */}
+      <section id="products-section" style={{ padding: '2rem 0 6rem' }}>
+        <div className="container">
+          
+          {/* Controls: Search result title + Sorting & In-Stock toggle */}
+          <div 
+            className="flex-between" 
+            style={{ 
+              marginBottom: '2rem', 
+              flexWrap: 'wrap', 
+              gap: '1rem',
+              background: 'white',
+              padding: '1.2rem 1.5rem',
+              borderRadius: '20px',
+              border: '1px solid rgba(0, 0, 0, 0.05)',
+              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.02)'
+            }}
+          >
+            <div>
+              <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#0f172a' }}>
+                {activeCategory === 'All' ? 'All Products' : activeCategory}
+                <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#64748b', marginLeft: '8px' }}>
+                  ({filteredProducts.length} items)
+                </span>
+              </h3>
             </div>
-          ) : filteredProducts.length === 0 ? (
-            <motion.div
-              key="empty"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              style={{ textAlign: 'center', padding: '6rem 2rem', background: '#ffffff', borderRadius: '1.5rem', border: '1px solid #e2ece5' }}
-            >
-              <Package size={52} color="#16a34a" style={{ margin: '0 auto 1rem', opacity: 0.6 }} />
-              <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f291e', marginBottom: '0.5rem' }}>No products found</h3>
-              <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>Try clearing your search or selecting a different category.</p>
-              <button
-                onClick={() => { setSearchQuery(''); setActiveCategory('All'); setOnlyInStock(false); }}
+
+            <div className="flex" style={{ gap: '1rem', flexWrap: 'wrap' }}>
+              {/* Only in stock toggle */}
+              <label 
                 style={{ 
-                  background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem 2rem',
-                  borderRadius: '12px',
-                  fontWeight: '800',
-                  fontSize: '0.92rem',
-                  cursor: 'pointer',
-                  boxShadow: '0 8px 18px rgba(22, 163, 74, 0.3)'
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  fontSize: '0.85rem', 
+                  fontWeight: '700', 
+                  color: '#475569',
+                  cursor: 'pointer' 
                 }}
               >
-                Clear Search & Filters
-              </button>
-            </motion.div>
-          ) : (
-            <motion.div 
-              key="grid"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="grid" 
-              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', rowGap: '2.5rem', columnGap: '2rem' }}
+                <input 
+                  type="checkbox" 
+                  checked={onlyInStock}
+                  onChange={(e) => setOnlyInStock(e.target.checked)}
+                  style={{ width: '18px', height: '18px', accentColor: '#16a34a' }}
+                />
+                In Stock Only
+              </label>
+
+              {/* Sort By Dropdown */}
+              <div style={{ minWidth: '170px' }}>
+                <select 
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  style={{ 
+                    padding: '0.55rem 1rem', 
+                    fontSize: '0.85rem', 
+                    borderRadius: '12px',
+                    background: '#f8fafc' 
+                  }}
+                >
+                  <option value="featured">Sort: Featured</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="name">Name: A to Z</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Product Grid */}
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '6rem 0' }}>
+              <div className="text-gradient" style={{ fontSize: '1.5rem', fontWeight: '800' }}>
+                Loading fresh harvest...
+              </div>
+            </div>
+          ) : filteredProducts.length === 0 ? (
+            <div 
+              style={{ 
+                textAlign: 'center', 
+                padding: '5rem 2rem', 
+                background: 'white', 
+                borderRadius: '24px',
+                border: '1px solid #f1f5f9'
+              }}
             >
-              {filteredProducts.map(product => {
-                const qty = getCartQuantity(product._id);
-                const isFav = favorites.includes(product._id);
-                const isOutOfStock = product.stock <= 0;
-                const mrp = Math.round(product.price * 1.25);
-
-                return (
-                  <motion.div 
-                    key={product._id} 
-                    variants={itemVariants}
-                    layout
-                    whileHover={{ y: -6 }}
-                    style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      justifyContent: 'space-between',
-                      borderRadius: '1.4rem', 
-                      background: '#ffffff',
-                      border: '1px solid #e2ece5',
-                      boxShadow: '0 4px 20px -2px rgba(22, 48, 36, 0.05)',
-                      overflow: 'hidden',
-                      position: 'relative',
-                      transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+              <Package size={56} style={{ color: '#94a3b8', margin: '0 auto 1.2rem' }} />
+              <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.5rem' }}>
+                No Products Found
+              </h3>
+              <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '1.5rem' }}>
+                We couldn't find anything matching "{searchQuery}". Try searching for another item or clear filters.
+              </p>
+              <button 
+                onClick={() => { setSearchQuery(''); setActiveCategory('All'); setOnlyInStock(false); }}
+                className="btn-primary"
+              >
+                Reset Filters
+              </button>
+            </div>
+          ) : (
+            <div 
+              style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', 
+                gap: '1.5rem' 
+              }}
+            >
+              <AnimatePresence>
+                {filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product._id}
+                    product={product}
+                    quantity={getCartQuantity(product._id)}
+                    isFavorite={favorites.includes(product._id)}
+                    onToggleFavorite={toggleFavorite}
+                    onAddToCart={(p) => {
+                      addToCart(p);
+                      openCart();
                     }}
-                  >
-                    {/* Image Area with Price Tag, Wishlist & Quick View */}
-                    <div style={{ 
-                      position: 'relative', 
-                      height: '190px', 
-                      background: '#f4f8f5', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center', 
-                      overflow: 'hidden' 
-                    }}>
-                      {/* Delivery Speed / Discount Tag */}
-                      <div style={{
-                        position: 'absolute',
-                        top: '12px',
-                        left: '12px',
-                        zIndex: 2,
-                        background: '#ecfdf5',
-                        border: '1px solid #bbf7d0',
-                        color: '#15803d',
-                        padding: '3px 8px',
-                        borderRadius: '999px',
-                        fontSize: '0.72rem',
-                        fontWeight: '800',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}>
-                        <Clock size={12} /> 15 MINS
-                      </div>
-
-                      {/* Wishlist Heart Icon */}
-                      <button
-                        type="button"
-                        onClick={(e) => toggleFavorite(product._id, e)}
-                        title={isFav ? "Saved to Wishlist" : "Save to Wishlist"}
-                        style={{
-                          position: 'absolute',
-                          top: '12px',
-                          right: '12px',
-                          zIndex: 2,
-                          background: '#ffffff',
-                          border: isFav ? '1px solid #fecaca' : '1px solid #e2ece5',
-                          borderRadius: '50%',
-                          width: '34px',
-                          height: '34px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        <Heart size={16} fill={isFav ? '#ef4444' : 'none'} color={isFav ? '#ef4444' : '#64748b'} />
-                      </button>
-
-                      {/* Product Image */}
-                      <motion.img 
-                        whileHover={{ scale: 1.08 }}
-                        transition={{ duration: 0.3 }}
-                        src={getImageUrl(product.image, product.name, product.category)} 
-                        alt={product.name} 
-                        onClick={() => setQuickViewProduct(product)}
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.src = getProductFallbackImage(product.name, product.category);
-                        }}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }} 
-                      />
-                    </div>
-
-                    {/* Card Content Area */}
-                    <div style={{ padding: '1.4rem', display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'space-between' }}>
-                      <div>
-                        <div className="flex-between" style={{ marginBottom: '0.6rem' }}>
-                          <span style={{ 
-                            background: '#ecfdf5', 
-                            color: '#15803d', 
-                            padding: '3px 9px',
-                            borderRadius: '999px',
-                            fontWeight: '800', 
-                            fontSize: '0.74rem', 
-                            textTransform: 'uppercase', 
-                            letterSpacing: '0.04em' 
-                          }}>
-                            {product.category}
-                          </span>
-                          <div className="flex" style={{ 
-                            gap: '4px', 
-                            background: '#fffbeb', 
-                            border: '1px solid #fef3c7',
-                            padding: '2px 8px', 
-                            borderRadius: '10px' 
-                          }}>
-                            <Star size={13} fill="#f59e0b" stroke="none" />
-                            <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#b45309' }}>4.8</span>
-                          </div>
-                        </div>
-                        
-                        <h3 
-                          onClick={() => setQuickViewProduct(product)}
-                          style={{ 
-                            fontSize: '1.25rem', 
-                            fontWeight: '800', 
-                            marginBottom: '0.8rem', 
-                            color: '#0f291e', 
-                            cursor: 'pointer',
-                            lineHeight: 1.3
-                          }}
-                        >
-                          {product.name}
-                        </h3>
-
-                        {/* Stock status */}
-                        <div style={{ fontSize: '0.82rem', marginBottom: '1rem' }}>
-                          {isOutOfStock ? (
-                            <span style={{ color: '#ef4444', fontWeight: '800' }}>● Out of stock</span>
-                          ) : product.stock < 10 ? (
-                            <span style={{ color: '#d97706', fontWeight: '800' }}>⚡ Only {product.stock} left in stock!</span>
-                          ) : (
-                            <span style={{ color: '#16a34a', fontWeight: '700' }}>● In Stock</span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Price and Add button / Stepper */}
-                      <div className="flex-between" style={{ paddingTop: '0.8rem', borderTop: '1px solid #f1f5f9' }}>
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-                            <span style={{ fontSize: '1.35rem', fontWeight: '900', color: '#0f291e' }}>
-                              ₹{product.price.toFixed(2)}
-                            </span>
-                            <span style={{ fontSize: '0.82rem', color: '#94a3b8', textDecoration: 'line-through' }}>
-                              ₹{mrp}
-                            </span>
-                          </div>
-                          <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: '800' }}>
-                            20% OFF
-                          </span>
-                        </div>
-
-                        {/* Interactive Quantity Stepper or Add Button */}
-                        {isOutOfStock ? (
-                          <span style={{ color: '#ef4444', fontWeight: '800', fontSize: '0.85rem' }}>
-                            Sold Out
-                          </span>
-                        ) : qty === 0 ? (
-                          <motion.button 
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.92 }}
-                            onClick={() => addToCart(product)}
-                            style={{ 
-                              padding: '0.65rem 1.4rem', 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '6px', 
-                              borderRadius: '12px',
-                              background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                              color: 'white',
-                              fontWeight: '800',
-                              fontSize: '0.88rem',
-                              border: 'none',
-                              cursor: 'pointer',
-                              boxShadow: '0 6px 16px -2px rgba(22, 163, 74, 0.35)'
-                            }}
-                          >
-                            <ShoppingCart size={16} /> Add
-                          </motion.button>
-                        ) : (
-                          /* Interactive Stepper */
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                            borderRadius: '12px',
-                            boxShadow: '0 6px 16px -2px rgba(22, 163, 74, 0.35)',
-                            overflow: 'hidden'
-                          }}>
-                            <button
-                              type="button"
-                              onClick={() => updateQuantity(product._id, qty - 1)}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'white',
-                                width: '32px',
-                                height: '36px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              <Minus size={15} />
-                            </button>
-                            <span style={{
-                              fontWeight: '900',
-                              fontSize: '0.92rem',
-                              color: 'white',
-                              padding: '0 8px',
-                              minWidth: '22px',
-                              textAlign: 'center'
-                            }}>
-                              {qty}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (qty < product.stock) {
-                                  updateQuantity(product._id, qty + 1);
-                                }
-                              }}
-                              style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'white',
-                                width: '32px',
-                                height: '36px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              <Plus size={15} />
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </motion.div>
+                    onUpdateQuantity={updateQuantity}
+                    onQuickView={(p) => setQuickViewProduct(p)}
+                  />
+                ))}
+              </AnimatePresence>
+            </div>
           )}
-        </AnimatePresence>
-
-        {/* FreshMart Style Why Choose Us Section */}
-        <div style={{
-          marginTop: '6rem',
-          padding: '3rem 2rem',
-          borderRadius: '2rem',
-          background: '#ffffff',
-          border: '1px solid #e2ece5',
-          boxShadow: '0 10px 30px -10px rgba(22, 48, 36, 0.06)',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: '2rem'
-        }}>
-          <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-            <div style={{ background: '#ecfdf5', color: '#16a34a', padding: '12px', borderRadius: '14px' }}>
-              <Truck size={24} />
-            </div>
-            <div>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0f291e', marginBottom: '4px' }}>
-                15-30 Min Express Drop
-              </h4>
-              <p style={{ fontSize: '0.84rem', color: '#64748b', lineHeight: 1.5 }}>
-                Directly dispatched from your neighborhood dark store for record-fast arrival.
-              </p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-            <div style={{ background: '#ecfdf5', color: '#16a34a', padding: '12px', borderRadius: '14px' }}>
-              <Leaf size={24} />
-            </div>
-            <div>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0f291e', marginBottom: '4px' }}>
-                100% Organic & Farm-Fresh
-              </h4>
-              <p style={{ fontSize: '0.84rem', color: '#64748b', lineHeight: 1.5 }}>
-                Sourced at dawn every morning from certified organic growers and trusted dairies.
-              </p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-            <div style={{ background: '#ecfdf5', color: '#16a34a', padding: '12px', borderRadius: '14px' }}>
-              <RotateCcw size={24} />
-            </div>
-            <div>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0f291e', marginBottom: '4px' }}>
-                No Questions Refund
-              </h4>
-              <p style={{ fontSize: '0.84rem', color: '#64748b', lineHeight: 1.5 }}>
-                Not 100% satisfied with freshness? Instant replacement or refund at your door.
-              </p>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-            <div style={{ background: '#ecfdf5', color: '#16a34a', padding: '12px', borderRadius: '14px' }}>
-              <ShieldCheck size={24} />
-            </div>
-            <div>
-              <h4 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0f291e', marginBottom: '4px' }}>
-                100% Safe & Secure
-              </h4>
-              <p style={{ fontSize: '0.84rem', color: '#64748b', lineHeight: 1.5 }}>
-                UPI, Credit/Debit cards & Cash on Delivery supported with contactless delivery.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
-      {/* Interactive "How It Works" Modal */}
+      {/* 5. QUICK VIEW PRODUCT MODAL */}
       <AnimatePresence>
-        {isHowItWorksOpen && (
-          <div style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 41, 30, 0.5)',
-            backdropFilter: 'blur(12px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '1.5rem'
-          }}
-          onClick={() => setIsHowItWorksOpen(false)}
+        {quickViewProduct && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 2500,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.25rem',
+              overflowY: 'auto'
+            }}
           >
+            {/* Backdrop */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setQuickViewProduct(null)}
               style={{
-                background: '#ffffff',
-                border: '1px solid #e2ece5',
-                borderRadius: '2rem',
-                maxWidth: '560px',
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(15, 23, 42, 0.65)',
+                backdropFilter: 'blur(6px)',
+                cursor: 'pointer'
+              }}
+            />
+
+            {/* Modal Dialog Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              style={{
+                position: 'relative',
+                zIndex: 1,
                 width: '100%',
-                padding: '2.5rem',
-                boxShadow: '0 25px 50px -10px rgba(22, 48, 36, 0.25)'
+                maxWidth: '700px',
+                maxHeight: '88vh',
+                overflowY: 'auto',
+                background: 'white',
+                borderRadius: '28px',
+                padding: '2rem',
+                boxShadow: '0 25px 60px rgba(0, 0, 0, 0.25)',
+                margin: 'auto'
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.8rem' }}>
-                <h3 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#0f291e' }}>How FreshCart Works</h3>
-                <button
-                  onClick={() => setIsHowItWorksOpen(false)}
-                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
+                <span 
+                  style={{ 
+                    background: '#f0fdf4', 
+                    color: '#15803d', 
+                    padding: '4px 12px', 
+                    borderRadius: '20px', 
+                    fontSize: '0.8rem', 
+                    fontWeight: '800' 
+                  }}
                 >
-                  <X size={18} />
+                  {quickViewProduct.category || 'Fresh Goods'}
+                </span>
+                <button 
+                  onClick={() => setQuickViewProduct(null)}
+                  style={{ background: '#f1f5f9', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  <X size={20} />
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                  <div style={{ background: '#ecfdf5', color: '#16a34a', padding: '10px', borderRadius: '12px' }}>
-                    <Search size={22} />
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: '800', marginBottom: '3px', color: '#0f291e' }}>1. Choose Your Daily Fresh Items</h4>
-                    <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: 1.5 }}>
-                      Browse farm-fresh organic produce, dairy, fruits, and pantry essentials.
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                  <div style={{ background: '#ecfdf5', color: '#16a34a', padding: '10px', borderRadius: '12px' }}>
-                    <ShieldCheck size={22} />
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: '800', marginBottom: '3px', color: '#0f291e' }}>2. Cold-Chain Hygienic Packing</h4>
-                    <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: 1.5 }}>
-                      Orders are packed from your nearest local dark store under strict temperature controls.
-                    </p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                  <div style={{ background: '#ecfdf5', color: '#16a34a', padding: '10px', borderRadius: '12px' }}>
-                    <Zap size={22} />
-                  </div>
-                  <div>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: '800', marginBottom: '3px', color: '#0f291e' }}>3. Delivered in 15 Minutes</h4>
-                    <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: 1.5 }}>
-                      Our express delivery partners bring your package straight to your doorstep contact-free.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => setIsHowItWorksOpen(false)}
-                style={{ 
-                  width: '100%', 
-                  height: '50px', 
-                  fontSize: '1rem', 
-                  borderRadius: '14px',
-                  background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                  color: 'white',
-                  fontWeight: '800',
-                  border: 'none',
-                  cursor: 'pointer',
-                  boxShadow: '0 8px 20px -3px rgba(22, 163, 74, 0.35)'
-                }}
-              >
-                Got It! Start Shopping
-              </button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* Interactive Quick-View Product Modal */}
-      <AnimatePresence>
-        {quickViewProduct && (
-          <div style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 41, 30, 0.5)',
-            backdropFilter: 'blur(12px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 9999,
-            padding: '1.5rem'
-          }}
-          onClick={() => setQuickViewProduct(null)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                background: '#ffffff',
-                border: '1px solid #e2ece5',
-                borderRadius: '2rem',
-                maxWidth: '640px',
-                width: '100%',
-                overflow: 'hidden',
-                boxShadow: '0 25px 50px -10px rgba(22, 48, 36, 0.25)',
-                position: 'relative',
-                padding: '2rem'
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setQuickViewProduct(null)}
-                style={{
-                  position: 'absolute',
-                  top: '1.2rem',
-                  right: '1.2rem',
-                  background: '#f1f5f9',
-                  border: 'none',
-                  borderRadius: '50%',
-                  width: '34px',
-                  height: '34px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#64748b',
-                  cursor: 'pointer'
-                }}
-              >
-                <X size={18} />
-              </button>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2rem' }}>
-                <div style={{
-                  borderRadius: '1.4rem',
-                  overflow: 'hidden',
-                  background: '#f4f8f5',
-                  height: '240px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <img
-                    src={getImageUrl(quickViewProduct.image, quickViewProduct.name, quickViewProduct.category)}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '2rem', alignItems: 'center' }}>
+                <div 
+                  style={{ 
+                    background: 'radial-gradient(circle, #f8fafc 0%, #f1f5f9 100%)', 
+                    borderRadius: '20px', 
+                    padding: '1.5rem', 
+                    minHeight: '220px', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center' 
+                  }}
+                >
+                  <img 
+                    src={getImageUrl(quickViewProduct.image, quickViewProduct.name, quickViewProduct.category)} 
                     alt={quickViewProduct.name}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src = getProductFallbackImage(quickViewProduct.name, quickViewProduct.category);
-                    }}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    style={{ maxWidth: '85%', maxHeight: '200px', objectFit: 'contain' }}
                   />
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <span style={{ 
-                      background: '#ecfdf5', 
-                      color: '#15803d', 
-                      padding: '3px 9px',
-                      borderRadius: '999px',
-                      fontSize: '0.75rem', 
-                      fontWeight: '800', 
-                      textTransform: 'uppercase' 
-                    }}>
-                      {quickViewProduct.category}
-                    </span>
-                    <h2 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#0f291e', marginTop: '8px', marginBottom: '0.8rem' }}>
-                      {quickViewProduct.name}
-                    </h2>
-                    <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1.2rem' }}>
-                      {quickViewProduct.description || 'Farm-fresh premium quality ingredient sourced directly from certified organic growers. Delivered cold & crisp in 15 minutes.'}
-                    </p>
-                    <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '1rem' }}>
-                      Stock Available: <span style={{ color: quickViewProduct.stock < 10 ? '#d97706' : '#16a34a', fontWeight: '800' }}>{quickViewProduct.stock} units</span>
-                    </div>
+                <div>
+                  <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#0f172a', letterSpacing: '-0.02em', marginBottom: '8px' }}>
+                    {quickViewProduct.name}
+                  </h2>
+                  <div className="flex" style={{ gap: '6px', color: '#f59e0b', fontSize: '0.9rem', fontWeight: '800', marginBottom: '1rem' }}>
+                    <Star size={16} fill="#f59e0b" /> 4.8 Rating • 120+ Reviews
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
-                    <div style={{ fontSize: '1.5rem', fontWeight: '900', color: '#0f291e' }}>
-                      ₹{quickViewProduct.price.toFixed(2)}
+                  <p style={{ color: '#64748b', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+                    100% natural, certified pesticide-safe produce sourced directly from contracted organic farms. Carefully packaged to retain maximum crispness and nutrients.
+                  </p>
+
+                  <div className="flex-between" style={{ marginBottom: '1.5rem', padding: '1rem', background: '#f8fafc', borderRadius: '16px' }}>
+                    <div>
+                      <p style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '600' }}>Price per pack</p>
+                      <p style={{ fontSize: '1.6rem', fontWeight: '900', color: '#16a34a' }}>
+                        ₹{quickViewProduct.price}
+                      </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        addToCart(quickViewProduct);
-                        setQuickViewProduct(null);
-                      }}
-                      style={{ 
-                        padding: '0.75rem 1.6rem', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '8px', 
-                        borderRadius: '12px',
-                        background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
-                        color: 'white',
-                        fontWeight: '800',
-                        border: 'none',
-                        cursor: 'pointer',
-                        boxShadow: '0 6px 16px -2px rgba(22, 163, 74, 0.35)'
-                      }}
-                    >
-                      <ShoppingCart size={17} /> Add to Cart
-                    </button>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '700', color: '#15803d' }}>
+                      ● In Stock Ready to Ship
+                    </span>
                   </div>
+
+                  <button
+                    onClick={() => {
+                      addToCart(quickViewProduct);
+                      setQuickViewProduct(null);
+                      openCart();
+                    }}
+                    className="btn-primary"
+                    style={{ width: '100%', padding: '1rem', borderRadius: '16px', fontSize: '1rem' }}
+                  >
+                    Add to Basket
+                  </button>
                 </div>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* 6. "HOW IT WORKS" MODAL */}
+      <AnimatePresence>
+        {isHowItWorksOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 2500,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.25rem',
+              overflowY: 'auto'
+            }}
+          >
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsHowItWorksOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(15, 23, 42, 0.65)',
+                backdropFilter: 'blur(6px)',
+                cursor: 'pointer'
+              }}
+            />
+
+            {/* Modal Dialog Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                width: '100%',
+                maxWidth: '620px',
+                maxHeight: '88vh',
+                overflowY: 'auto',
+                background: 'white',
+                borderRadius: '28px',
+                padding: '2.5rem',
+                boxShadow: '0 25px 60px rgba(0, 0, 0, 0.25)',
+                margin: 'auto'
+              }}
+            >
+              <div className="flex-between" style={{ marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '1.6rem', fontWeight: '900', color: '#0f172a' }}>How FreshCart Works</h3>
+                <button 
+                  onClick={() => setIsHowItWorksOpen(false)}
+                  style={{ background: '#f1f5f9', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="grid" style={{ gap: '1.5rem' }}>
+                {[
+                  { step: "01", title: "Select Your Daily Groceries", desc: "Choose from hand-harvested vegetables, fresh dairy, and pantry essentials." },
+                  { step: "02", title: "Quality Check & Rapid Pack", desc: "Our local micro-fulfillment center carefully inspects and packs your items in insulated containers." },
+                  { step: "03", title: "15-Minute Doorstep Delivery", desc: "Our delivery partner delivers right to your door with live status and contact support." }
+                ].map((item, idx) => (
+                  <div key={idx} className="flex" style={{ gap: '16px', alignItems: 'flex-start' }}>
+                    <div style={{ background: '#16a34a', color: 'white', width: '36px', height: '36px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', flexShrink: 0 }}>
+                      {item.step}
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#0f172a', marginBottom: '4px' }}>{item.title}</h4>
+                      <p style={{ fontSize: '0.88rem', color: '#64748b', lineHeight: '1.5' }}>{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button 
+                onClick={() => setIsHowItWorksOpen(false)}
+                className="btn-primary" 
+                style={{ width: '100%', marginTop: '2rem', padding: '0.9rem', borderRadius: '14px' }}
+              >
+                Got It, Let's Shop
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 };

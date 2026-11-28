@@ -98,4 +98,9 @@ export const paymentAPI = {
   createOrder: (amount) => api.post('/payment/create-order', { amount }),
 };
 
+export const settingsAPI = {
+  get: () => api.get('/settings'),
+  update: (settingsData) => api.put('/settings', settingsData),
+};
+
 export default api;
